@@ -1,8 +1,8 @@
-import bpy
+import bpy # type: ignore
 import math
-import mathutils
+import mathutils # type: ignore
 import uuid
-from bpy.app.handlers import persistent
+from bpy.app.handlers import persistent # type: ignore
 
 from .ico import *
 
@@ -441,12 +441,12 @@ class OnigiriViewProperties(bpy.types.PropertyGroup):
             oni_settings["terminate"] = False
             return
 
-    dummy: bpy.props.BoolProperty(default=False)
+    dummy: bpy.props.BoolProperty = bpy.props.BoolProperty(default=False)
 
-    rig_author_name: bpy.props.StringProperty(default="Unknown")
-    rig_author_property: bpy.props.StringProperty(default="")
+    rig_author_name: bpy.props.StringProperty = bpy.props.StringProperty(default="Unknown")
+    rig_author_property: bpy.props.StringProperty = bpy.props.StringProperty(default="")
 
-    rig_name: bpy.props.StringProperty(default="")
+    rig_name: bpy.props.StringProperty = bpy.props.StringProperty(default="")
 
 
 """
@@ -478,7 +478,7 @@ class OnigiriViewOperator(bpy.types.Operator):
     bl_idname = "onigiri.access_everything"
     bl_label = "See All"
 
-    state: bpy.props.StringProperty(default="")
+    state: bpy.props.StringProperty = bpy.props.StringProperty(default="")
 
     def execute(self, context):
 

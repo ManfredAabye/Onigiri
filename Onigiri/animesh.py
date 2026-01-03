@@ -777,7 +777,7 @@ class OnigiriAnimeshLoad(bpy.types.Operator, ImportHelper):
     bl_label = "Load template"
 
     filename_ext = ".ctm"
-    filter_glob: bpy.props.StringProperty(default="*.ctm;*.onim", options={"HIDDEN"})
+    filter_glob = bpy.props.StringProperty(default="*.ctm;*.onim", options={"HIDDEN"})
 
     def execute(self, context):
         obj = bpy.data.objects
@@ -824,7 +824,7 @@ class OnigiriAnimeshRemoveTarget(bpy.types.Operator):
     bl_idname = "onigiri.animesh_remove_target"
     bl_label = "Remove target map"
 
-    target: bpy.props.StringProperty(default="")
+    target = bpy.props.StringProperty(default="")
 
     def execute(self, context):
         obj = bpy.data.objects
@@ -893,7 +893,7 @@ class OnigiriAnimeshSetTarget(bpy.types.Operator):
     bl_idname = "onigiri.animesh_set_target"
     bl_label = "Set target"
 
-    target: bpy.props.StringProperty(default="")
+    target = bpy.props.StringProperty(default="")
 
     @classmethod
     def poll(cls, context):

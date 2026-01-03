@@ -1,8 +1,8 @@
 bl_info = {
     "name": "Onigiri",
     "author": "Nessaki, Originally writen by BinBash Resident (Second Life)",
-    "version": (4, 1, 0, 2),
-    "blender": (4, 0, 0),
+    "version": (5, 1, 3),
+    "blender": (5, 0, 0),
     "description": "Quick Bento / Animesh prototype tool, includes an advanced Character Converter and animation system, Based on last open source version of GNU GPL v3 Bento Buddy",
     "warning": "",
     "doc_url": "",
@@ -26,30 +26,30 @@ print(" * Bulk animation exporter: export_mapped_animation needs work, see (expo
 
 import re
 import os
-import bpy
+import bpy # type: ignore
 import sys
 import json
 import math
 import time
 import copy
-import bmesh
+import bmesh # type: ignore
 import shutil
 import pickle
 import pprint
 import struct
 import decimal
 import tempfile
-import mathutils
+import mathutils # type: ignore
 import importlib
 import traceback
 
 from collections import deque
 import xml.etree.ElementTree as ET
 
-from bpy_extras.io_utils import ImportHelper, ExportHelper
-from bpy.utils import previews
+from bpy_extras.io_utils import ImportHelper, ExportHelper # type: ignore
+from bpy.utils import previews # type: ignore
 
-from bpy.app.handlers import persistent
+from bpy.app.handlers import persistent # type: ignore
 
 from . import mod_functions
 from . import monitor
@@ -141,9 +141,14 @@ def clean_data(context):
     oni_paint = bpy.context.scene.get("oni_paint")
     if oni_paint:
         if oni_paint.get("paint_back_face") is not None:
-            bpy.data.brushes["Draw"].falloff_shape = "PROJECTED"
-            bpy.data.brushes["Draw"].use_frontface = False
-            bpy.data.brushes["Draw"].use_frontface_falloff = False
+            # Kompatibilität für Blender 5.0: Brush-Properties nur setzen, wenn Brush existiert
+            brush = bpy.data.brushes.get("Draw")
+            if brush:
+                brush.falloff_shape = "PROJECTED"
+                brush.use_frontface = False
+                brush.use_frontface_falloff = False
+            else:
+                print("Warnung: Brush 'Draw' nicht gefunden – Einstellungen werden übersprungen (Blender 5.0)")
 
     if 1 == 1:
         if getattr(bpy.context.scene, "oni_anim", None) is not None:
@@ -973,7 +978,7 @@ class OnigiriSlidersProperties(bpy.types.PropertyGroup):
     def update_sliders_blank(self, context):
         self["sliders_blank"] = False
 
-    sliders_blank: bpy.props.BoolProperty(default=False, update=update_sliders_blank)
+    sliders_blank: bpy.props.BoolProperty = bpy.props.BoolProperty(default=False, update=update_sliders_blank)
 
     def sliders_menu_enabled(self, context):
         if self.sliders_menu_enabled:
@@ -982,7 +987,7 @@ class OnigiriSlidersProperties(bpy.types.PropertyGroup):
             print("Body Shop - disabled")
             sliders.restore_rig()
 
-    sliders_menu_enabled: bpy.props.BoolProperty(
+    sliders_menu_enabled: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="NOTE: For efficiency sake, disable this menu item when not in use!"
         "\n\n"
@@ -1006,40 +1011,42 @@ class OnigiriSlidersProperties(bpy.types.PropertyGroup):
         if self.sliders_location:
             self["sliders_scale"] = False
 
-    sliders_location: bpy.props.BoolProperty(
+    sliders_location: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Enable the position sliders for view and manipulation",
         default=False,
         update=update_location,
     )
-    sliders_scale: bpy.props.BoolProperty(
+    sliders_scale: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Enable the sizing sliders for view and manipulation",
         default=True,
         update=update_scale,
     )
-    sliders_show_all: bpy.props.BoolProperty(
+    sliders_show_all: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Enable the view of all bones in the selected rig.  This can be a lot of clutter.  The default is to show only selected pose bones",
         default=False,
     )
 
-    def sliders_set_rig(context):
+    @staticmethod
+    def sliders_set_rig(self):
         sliders.set_rig()
         return 1
 
-    sliders_set_rig: bpy.props.IntProperty(
+    sliders_set_rig: bpy.props.IntProperty = bpy.props.IntProperty(
         name="",
         description="- internal setter for sliders.set_rig()",
         default=0,
         get=sliders_set_rig,
     )
 
-    def sliders_restore_rig(context):
+    @staticmethod
+    def sliders_restore_rig(self):
         sliders.restore_rig()
         return 1
 
-    sliders_restore_rig: bpy.props.IntProperty(
+    sliders_restore_rig: bpy.props.IntProperty = bpy.props.IntProperty(
         name="",
         description="- internal getter for sliders.restore_rig()",
         default=0,
@@ -1060,7 +1067,7 @@ class OnigiriSlidersProperties(bpy.types.PropertyGroup):
                 )
                 armObj.data.display_type = display_type
 
-    sliders_rig_display_stick: bpy.props.BoolProperty(
+    sliders_rig_display_stick: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Enable the view of all bones in the selected rig.  This can be a lot of clutter.  The default is to show only selected pose bones",
         default=False,
@@ -1535,7 +1542,7 @@ class OnigiriCharacterConverterProperties(bpy.types.PropertyGroup):
     def update_blank(self, context):
         self["blank"] = False
 
-    blank: bpy.props.BoolProperty(default=False, update=update_blank)
+    blank: bpy.props.BoolProperty = bpy.props.BoolProperty(default=False, update=update_blank)
 
     def update_import_pose(self, context):
         if self.import_pose:
@@ -1549,7 +1556,7 @@ class OnigiriCharacterConverterProperties(bpy.types.PropertyGroup):
         else:
             self["import_pose"] = True
 
-    import_pose: bpy.props.BoolProperty(
+    import_pose: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="A humanoid converted character should have a somewhat compatible pose that will work with some degree of success with in-world "
         "animations.  For this to happen you must pose your character manually, or using the pose library, an animation or even one from "
@@ -1558,7 +1565,7 @@ class OnigiriCharacterConverterProperties(bpy.types.PropertyGroup):
         update=update_import_pose,
     )
 
-    keep_pose: bpy.props.BoolProperty(
+    keep_pose: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="A humanoid converted character should have a somewhat compatible pose that will work with some degree of success with in-world "
         "animations.  For this to happen you must pose your character manually, or using the pose library, an animation or even one from "
@@ -1567,13 +1574,13 @@ class OnigiriCharacterConverterProperties(bpy.types.PropertyGroup):
         update=update_keep_pose,
     )
 
-    copy: bpy.props.BoolProperty(
+    copy: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="You have the option to make a copy of the items that will be converted instead of working directly on your content.",
         default=False,
     )
 
-    anchor_unmapped: bpy.props.BoolProperty(
+    anchor_unmapped: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Reskin unmapped bones that lead to an anchor that you already have mapped.  An anchor is a bone that is mapped from one "
         "rig to another.  A reskin bone is a bone that is mapped to an anchor on the same rig because it will not be used.  The "
@@ -1583,7 +1590,7 @@ class OnigiriCharacterConverterProperties(bpy.types.PropertyGroup):
         default=True,
     )
 
-    remove_unused: bpy.props.BoolProperty(
+    remove_unused: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Remove unused and unmappable bones"
         "\n\n"
@@ -1593,7 +1600,7 @@ class OnigiriCharacterConverterProperties(bpy.types.PropertyGroup):
         default=True,
     )
 
-    remove_unknown: bpy.props.BoolProperty(
+    remove_unknown: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Remove unknown vertex groups"
         "\n\n"
@@ -1602,7 +1609,7 @@ class OnigiriCharacterConverterProperties(bpy.types.PropertyGroup):
         default=True,
     )
 
-    apply_transforms: bpy.props.BoolProperty(
+    apply_transforms: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="This applies all transforms to the objects associated with the conversion before the conversion takes place.  This is "
         "usually a good thing to do but I worry that it will break some content so it's here as an option.",
@@ -1619,7 +1626,7 @@ class OnigiriCharacterConverterLoadMap(bpy.types.Operator, ImportHelper):
     bl_label = "Load Map"
 
     filename_ext = ".onim"
-    filter_glob: bpy.props.StringProperty(default="*.ccm;*onim", options={"HIDDEN"})
+    filter_glob: bpy.props.StringProperty = bpy.props.StringProperty(default="*.ccm;*onim", options={"HIDDEN"})
 
     def invoke(self, context, event):
         load_path = script_dir + data_path
@@ -2392,15 +2399,15 @@ class OnigiriOnemapProperties(bpy.types.PropertyGroup):
     def update_onemap_blank(self, context):
         bpy.context.scene.oni_onemap.property_unset("onemap_blank")
 
-    onemap_blank: bpy.props.BoolProperty(default=False, update=update_onemap_blank)
+    onemap_blank: bpy.props.BoolProperty = bpy.props.BoolProperty(default=False, update=update_onemap_blank)
 
-    onemap_message: bpy.props.StringProperty(
+    onemap_message: bpy.props.StringProperty = bpy.props.StringProperty(
         name="",
         description="--internal",
         default="Choose rig to map and click Start",
     )
 
-    onemap_template_name: bpy.props.StringProperty(
+    onemap_template_name: bpy.props.StringProperty = bpy.props.StringProperty(
         name="",
         description="--internal",
         default="",
@@ -2420,7 +2427,7 @@ class OnigiriOnemapProperties(bpy.types.PropertyGroup):
         if not oni_onemap.onemap_platform_other:
             oni_onemap["onemap_platform_opensim"] = True
 
-    onemap_platform_opensim: bpy.props.BoolProperty(
+    onemap_platform_opensim: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="For Second Life and Opensim"
         "\n\n"
@@ -2428,7 +2435,7 @@ class OnigiriOnemapProperties(bpy.types.PropertyGroup):
         default=True,
         update=update_onemap_platform_opensim,
     )
-    onemap_platform_other: bpy.props.BoolProperty(
+    onemap_platform_other: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="For another platform"
         "\n\n"
@@ -2440,7 +2447,7 @@ class OnigiriOnemapProperties(bpy.types.PropertyGroup):
     def update_onemap_edit(self, context):
         print("reskin triggered to off")
 
-    onemap_edit: bpy.props.BoolProperty(
+    onemap_edit: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Edit Mode"
         "\n\n"
@@ -2450,7 +2457,7 @@ class OnigiriOnemapProperties(bpy.types.PropertyGroup):
         update=update_onemap_edit,
     )
 
-    onemap_offset: bpy.props.FloatProperty(
+    onemap_offset: bpy.props.FloatProperty = bpy.props.FloatProperty(
         name="",
         description="Output rig offset from input rig"
         "\n\n"
@@ -2460,11 +2467,11 @@ class OnigiriOnemapProperties(bpy.types.PropertyGroup):
         default=0.6,
     )
 
-    onemap_started: bpy.props.StringProperty(
+    onemap_started: bpy.props.StringProperty = bpy.props.StringProperty(
         name="", description="--internal", default=""
     )
 
-    onemap_menu_enabled: bpy.props.BoolProperty(
+    onemap_menu_enabled: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Expand the character mapper"
         "\n\n"
@@ -2476,14 +2483,14 @@ class OnigiriOnemapProperties(bpy.types.PropertyGroup):
         default=False,
     )
 
-    onemap_load_pose: bpy.props.BoolProperty(
+    onemap_load_pose: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Load the pose that's stored in the map and apply it, if it exists.  This pose can then be saved with the map for "
         "later use.  If you want to save this pose back to the file, make sure to enable the (Save Pose) option to store "
         "your existing pose back to the file.",
         default=True,
     )
-    onemap_save_pose: bpy.props.BoolProperty(
+    onemap_save_pose: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Save the current pose with your map"
         "\n\n"
@@ -2493,7 +2500,7 @@ class OnigiriOnemapProperties(bpy.types.PropertyGroup):
         default=True,
     )
 
-    onemap_apply_pose: bpy.props.BoolProperty(
+    onemap_apply_pose: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Apply the stored pose to your rig.  Sometimes when mapping a rig you may want to move and rotate bones around to get "
         "a better view and this change will travel with your file, if you switch on (Save Pose).  This button will restore "
@@ -2501,7 +2508,7 @@ class OnigiriOnemapProperties(bpy.types.PropertyGroup):
         default=False,
     )
 
-    onemap_view_map: bpy.props.BoolProperty(
+    onemap_view_map: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="", description="View the bone map", default=False
     )
 
@@ -2511,7 +2518,7 @@ class OnigiriOnemapProperties(bpy.types.PropertyGroup):
             oni_onemap["onemap_view_reskin"] = True
             onemap.props["view_reskin_bones"] = ""
 
-    onemap_view_reskin: bpy.props.BoolProperty(
+    onemap_view_reskin: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="View reskin bones for this anchor",
         default=False,
@@ -2568,7 +2575,7 @@ class OnigiriOnemapProperties(bpy.types.PropertyGroup):
         if not self.onemap_move:
             bpy.ops.onigiri.onemap_move()
 
-    onemap_reskin: bpy.props.BoolProperty(
+    onemap_reskin: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Reskin Mode"
         "\n\n"
@@ -2577,7 +2584,7 @@ class OnigiriOnemapProperties(bpy.types.PropertyGroup):
         default=False,
         update=update_onemap_reskin,
     )
-    onemap_move: bpy.props.BoolProperty(
+    onemap_move: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Move Mode"
         "\n\n"
@@ -2616,7 +2623,7 @@ class OnigiriOnemapProperties(bpy.types.PropertyGroup):
         oni_onemap.onemap_message = "Ready!"
         return True
 
-    onemap_set_error: bpy.props.BoolProperty(get=trigger_onemap_set_error)
+    onemap_set_error: bpy.props.BoolProperty = bpy.props.BoolProperty(get=trigger_onemap_set_error)
 
     def trigger_onemap_set_input_bone_group(self):
 
@@ -2672,13 +2679,13 @@ class OnigiriOnemapProperties(bpy.types.PropertyGroup):
         onemap.update_map(input=inRig, output=outRig, controllers=False)
         return True
 
-    onemap_set_input_bone_group: bpy.props.BoolProperty(
+    onemap_set_input_bone_group: bpy.props.BoolProperty = bpy.props.BoolProperty(
         default=False, get=trigger_onemap_set_input_bone_group
     )
-    onemap_set_output_bone_group: bpy.props.BoolProperty(
+    onemap_set_output_bone_group: bpy.props.BoolProperty = bpy.props.BoolProperty(
         default=False, get=trigger_onemap_set_output_bone_group
     )
-    onemap_update_map: bpy.props.BoolProperty(
+    onemap_update_map: bpy.props.BoolProperty = bpy.props.BoolProperty(
         default=False, get=trigger_onemap_update_map
     )
 
@@ -2712,19 +2719,19 @@ class OnigiriOnemapProperties(bpy.types.PropertyGroup):
             if tbone in outRig.data.bones:
                 outRig.data.bones[tbone].hide = oni_onemap.onemap_hide_output_bones
 
-    onemap_hide_rename_bones: bpy.props.BoolProperty(
+    onemap_hide_rename_bones: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Click to restore the view of anchor bones.",
         default=False,
         update=update_onemap_hide_rename_bones,
     )
-    onemap_hide_reskin_bones: bpy.props.BoolProperty(
+    onemap_hide_reskin_bones: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Click to restore the view of reskin bones.",
         default=False,
         update=update_onemap_hide_reskin_bones,
     )
-    onemap_hide_output_bones: bpy.props.BoolProperty(
+    onemap_hide_output_bones: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Click to restore the view of output bones.",
         default=False,
@@ -2740,7 +2747,7 @@ class OnigiriOnemapProperties(bpy.types.PropertyGroup):
         outRig = inRig["oni_onemap_actor"]
         onemap.update_map(input=inRig, output=outRig)
 
-    onemap_follow: bpy.props.BoolProperty(
+    onemap_follow: bpy.props.BoolProperty = bpy.props.BoolProperty(
         name="",
         description="Enable this to make the Actor bones follow the Director, which should allow for easier mapping of some items when "
         "you're able to see what's in motion.  After using this rotate a bone on the Actor or setup a test animation beforehand.",
@@ -17856,7 +17863,9 @@ class OnigiriColladaExporter(bpy.types.Operator, ExportHelper):
             oni_devkit.property_unset("use_bind_data")
             if 1 == 0:
                 print("Converting using universal data...")
-                collada_universal.write_collada(
+                # Standardmäßig glTF verwenden
+                from . import collada_universal
+                collada_universal.write_gltf(
                     armature=armature, write=True, file_in=file_in, file_out=file_out
                 )
 
@@ -17878,9 +17887,10 @@ class OnigiriColladaExporter(bpy.types.Operator, ExportHelper):
                 use_offset_location = True
 
         print("Converting dae file:", file_in)
-        collada.write_collada(
+        # Standardmäßig glTF verwenden
+        from . import collada
+        collada_universal.write_gltf(
             armature=armature,
-            real_armature=arm,
             write=True,
             file_in=file_in,
             file_out=file_out,
@@ -18779,33 +18789,31 @@ class OnigiriPanelImport(bpy.types.Panel):
                     emote_name = "None"
 
                 row = col.row(align=True)
-                row.prop(
-                    oni_anim_edit,
-                    "anim_blank",
+                row.label(
                     text="Version:",
                 )
                 row.prop(
                     oni_anim_edit,
                     "anim_blank",
                     text=str(version),
+                    toggle=False,
+                    emboss = False,
                 )
 
                 row = col.row(align=True)
-                row.prop(
-                    oni_anim_edit,
-                    "anim_blank",
+                row.label(
                     text="Sub-Version:",
                 )
                 row.prop(
                     oni_anim_edit,
                     "anim_blank",
                     text=str(sub_version),
+                    toggle=False,
+                    emboss = False,
                 )
 
                 row = col.row(align=True)
-                row.prop(
-                    oni_anim_edit,
-                    "anim_blank",
+                row.label(
                     text="Base Priority:",
                 )
                 row.prop(
@@ -18815,33 +18823,31 @@ class OnigiriPanelImport(bpy.types.Panel):
                 )
 
                 row = col.row(align=True)
-                row.prop(
-                    oni_anim_edit,
-                    "anim_blank",
+                row.label(
                     text="Duration:",
                 )
                 row.prop(
                     oni_anim_edit,
                     "anim_blank",
                     text=str(round(duration, 4)),
+                    emboss = False,
+                    toggle=False,
                 )
 
                 row = col.row(align=True)
-                row.prop(
-                    oni_anim_edit,
-                    "anim_blank",
+                row.label(
                     text="Emote Name:",
                 )
                 row.prop(
                     oni_anim_edit,
                     "anim_blank",
                     text=str(emote_name),
+                    emboss = False,
+                    toggle=False,
                 )
 
                 row = col.row(align=True)
-                row.prop(
-                    oni_anim_edit,
-                    "anim_blank",
+                row.label(
                     text="Loop in point:",
                 )
                 row.prop(
@@ -18851,9 +18857,7 @@ class OnigiriPanelImport(bpy.types.Panel):
                 )
 
                 row = col.row(align=True)
-                row.prop(
-                    oni_anim_edit,
-                    "anim_blank",
+                row.label(
                     text="Loop out point:",
                 )
                 row.prop(
@@ -18866,10 +18870,9 @@ class OnigiriPanelImport(bpy.types.Panel):
                     loop_enabled = "Yes"
                 else:
                     loop_enabled = "No"
+
                 row = col.row(align=True)
-                row.prop(
-                    oni_anim_edit,
-                    "anim_blank",
+                row.label(
                     text="Loop enabled:",
                 )
                 row.prop(
@@ -18879,9 +18882,7 @@ class OnigiriPanelImport(bpy.types.Panel):
                 )
 
                 row = col.row(align=True)
-                row.prop(
-                    oni_anim_edit,
-                    "anim_blank",
+                row.label(
                     text="Ease in duration:",
                 )
                 row.prop(
@@ -18891,16 +18892,15 @@ class OnigiriPanelImport(bpy.types.Panel):
                 )
 
                 row = col.row(align=True)
-                row.prop(
-                    oni_anim_edit,
-                    "anim_blank",
+                row.label(
                     text="Ease out duration:",
                 )
+
                 row.prop(
                     oni_anim_edit,
                     "anim_ease_out_duration",
                     text=" ",
-                    toggle=True,
+					toggle=True,
                 )
 
                 row = col.row(align=True)
@@ -18910,23 +18910,24 @@ class OnigiriPanelImport(bpy.types.Panel):
                     text="Hand Pose:",
                 )
 
+                row = col.row(align=True)
                 row.prop(
                     oni_anim_edit,
                     "anim_hand_pose",
                     text="Optional Hand Pose: " + anim_hand_poses_menu[int(oni_anim_edit.anim_hand_pose)][1],
-                    toggle=True,
                 )
 
                 row = col.row(align=True)
-                row.prop(
-                    oni_anim_edit,
-                    "anim_blank",
+                row.label(
                     text="Animated Joints:",
                 )
+
                 row.prop(
                     oni_anim_edit,
                     "anim_blank",
                     text=str(num_joints),
+                    emboss = False,
+                    toggle=False,
                 )
 
             if oni_anim_edit.anim_last_loaded != "":
@@ -18935,6 +18936,7 @@ class OnigiriPanelImport(bpy.types.Panel):
                     oni_anim_edit,
                     "anim_blank",
                     text=oni_anim_edit.anim_last_loaded,
+                    emboss = False,
                 )
                 col = box.column(align=True)
 
@@ -18966,6 +18968,8 @@ class OnigiriPanelImport(bpy.types.Panel):
                                 oni_anim_edit,
                                 "anim_blank",
                                 text=anim_joint,
+			                    emboss = False,
+			                    toggle=False,
                             )
                             if anim_joint == oni_anim_edit.anim_joint_name:
                                 row.prop(
@@ -20605,6 +20609,7 @@ class OnigiriRunProperties(bpy.types.PropertyGroup):
         return
 
     def trigger_get(self):
+        """
         print("Triggered get")
 
         if oni_settings["terminate"]:
@@ -20612,6 +20617,8 @@ class OnigiriRunProperties(bpy.types.PropertyGroup):
             return True
         bpy.context.scene.oni_run.running = False
         return True
+        """
+        return bpy.context.scene.oni_run.running
 
     def trigger_set(self, value):
 
@@ -20638,6 +20645,7 @@ class OnigiriRunProperties(bpy.types.PropertyGroup):
         name="oni_running",
         description="actively running",
         set=trigger_set,
+        get=trigger_get,
         default=False,
     )
 
@@ -35070,8 +35078,8 @@ class OnigiriAccessAllBones(bpy.types.Operator):
         armObj.select_set(True)
         utils.activate(armObj)
 
-        layers = [True for i in armObj.data.layers]
-        armObj.data.layers = layers
+        for collection in armObj.data.collections:
+            collection.is_visible = True
 
         for boneObj in armObj.data.bones:
             boneObj.hide = False
@@ -46412,9 +46420,10 @@ class OnigiriCreateMeshDeformer(bpy.types.Operator, ExportHelper):
         file_in = file_path
         file_out = self.properties.filepath
 
-        collada.write_collada(
+        # Standardmäßig glTF verwenden
+        from . import collada
+        collada_universal.write_gltf(
             armature=proxyObj.name,
-            real_armature=proxyObj.name,
             write=True,
             file_in=file_in,
             file_out=file_out,
@@ -48493,18 +48502,19 @@ class OnigiriSkinningPanel(bpy.types.Panel):
                 row = col.row(align=True)
                 row.operator(
                     "onigiri.transfer_weights",
-                    text="Transfer Weights",
+                    text="Transfer Weights"
                 ).action = "transfer"
 
                 row = col.row(align=True)
                 row.operator(
                     "onigiri.transfer_weights",
-                    text="Parent Object Only",
+                    text="Parent Object Only"
                 ).action = "parent_object"
+
                 row = col.row(align=True)
                 row.operator(
                     "onigiri.transfer_weights",
-                    text="Parent Armature Only",
+                    text="Parent Armature Only"
                 ).action = "parent_armature"
 
                 if oni_skin.source_count > 1:
@@ -55383,7 +55393,6 @@ class OnigiriAnimationPanel(bpy.types.Panel):
 
                 if targetObj is not None:
                     if targetObj.name not in bpy.context.scene.objects:
-
                         oni_mixer.mixer_target_locked = False
                     else:
                         mixer_target_name = targetObj.name
@@ -55457,7 +55466,7 @@ class OnigiriAnimationPanel(bpy.types.Panel):
                         row.operator(
                             "onigiri.mixer_ready",
                             text="Click To Start Picking",
-                            icon_value = get_icon_id("thumb_up"),
+                            icon_value = get_icon_id("click"),
                         )
 
                     row = col.row(align=True)
@@ -55584,7 +55593,7 @@ class OnigiriAnimationPanel(bpy.types.Panel):
                     mixer_inherit.state = "True"
                     mixer_inherit = row.operator(
                         "onigiri.mixer_inherit",
-                        text="Rotation Disable",
+                        text="Rotation Disable"
                     )
                     mixer_inherit.transform = "rotation"
                     mixer_inherit.state = "False"
@@ -55592,13 +55601,13 @@ class OnigiriAnimationPanel(bpy.types.Panel):
                     row = col.row(align=True)
                     mixer_inherit = row.operator(
                         "onigiri.mixer_inherit",
-                        text="Location Enable",
+                        text="Location Enable"
                     )
                     mixer_inherit.transform = "location"
                     mixer_inherit.state = "True"
                     mixer_inherit = row.operator(
                         "onigiri.mixer_inherit",
-                        text="Location Disable",
+                        text="Location Disable"
                     )
                     mixer_inherit.transform = "location"
                     mixer_inherit.state = "False"
@@ -56059,7 +56068,8 @@ class OnigiriPanelRigTools(bpy.types.Panel):
                     is_qualified = True
 
 
-        MOOFEEDOODLEPOODLEMAKOODLE = onim.poll_enable_bones
+        #Zaher: Removed due bug : AttributeError: Writing to ID classes in this context is not allowed: Neru Akita_arm, Object datablock, error setting Object.oni_bone_groups
+        #MOOFEEDOODLEPOODLEMAKOODLE = onim.poll_enable_bones
         row = col.row(align=True)
         select_base_bones = row.operator(
             "onigiri.select_bones",
@@ -56673,16 +56683,17 @@ class OnigiriPanelRigTools(bpy.types.Panel):
         col.separator()
         row = col.row(align=True)
 
-        row.operator(
-            "onigiri.rotation_mode",
-            text="Set rotation mode",
-            icon_value = get_icon_id("rotation"),
-        )
-        row = col.row(align=True)
         row.prop_menu_enum(
             context.scene.oni_anim_props,
             "rotation_mode",
             text="Rotation Mode: " + context.scene.oni_anim_props.rotation_mode,
+        )
+
+        row = col.row(align=True)
+        row.operator(
+            "onigiri.rotation_mode",
+            text="Set rotation mode",
+            icon_value = get_icon_id("rotation"),
         )
 
         oni = bpy.context.scene.onigiri
@@ -61892,7 +61903,9 @@ class OnigiriSelectBones(bpy.types.Operator):
 
         for bone in skel.avatar_skeleton:
             if bone in bone_groups.bones[group]:
-                boneType[bone].select = state
+                b = boneType.get(bone)
+                if b is not None:
+                    b.select = state
 
         return {"FINISHED"}
 
@@ -63108,9 +63121,9 @@ class OnigiriSimCurlAdd(bpy.types.Operator):
                         continue
                 if not oni_sim.sim_anchor:
                     if parent not in bone_names:
-
                         anchor = boneObj.name
                         continue
+
                 armObj.data.bones.active = boneObj.bone
                 bc = boneObj.constraints
                 conObj = bc.new("COPY_TRANSFORMS")
@@ -64900,14 +64913,17 @@ def register():
     from bpy.utils import register_class
 
     for cls in classes:
+        try:
+            register_class(cls)
+        except Exception as e:
+            print(f"Error registering class {cls.__name__}: {e}")
 
-        register_class(cls)
-
-        globals.version = bl_info["version"]
+    globals.version = bl_info["version"]
 
     bpy.types.Scene.oni_sliders = bpy.props.PointerProperty(
         type=OnigiriSlidersProperties
     )
+
 
     bpy.types.PoseBone.oni_sliders_location_x = bpy.props.FloatProperty(
         name="",

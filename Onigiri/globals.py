@@ -1,5 +1,5 @@
 import math
-import mathutils
+import mathutils # type: ignore
 from .presets import skeleton as skel
 
 if True:

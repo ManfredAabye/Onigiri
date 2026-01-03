@@ -1,7 +1,7 @@
-import bpy
+import bpy # type: ignore
 from . import utils
 import traceback
-import mathutils
+import mathutils # type: ignore
 
 
 if 1 == 1:

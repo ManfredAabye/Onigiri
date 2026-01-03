@@ -1,6 +1,6 @@
-import bpy
+import bpy # type: ignore
 import traceback
-import mathutils
+import mathutils # type: ignore
 import xml.etree.ElementTree as ET
 from . import utils
 

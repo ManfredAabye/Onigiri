@@ -1,5 +1,5 @@
 import os
-import bpy
+import bpy # type: ignore
 import sys
 
 # import time

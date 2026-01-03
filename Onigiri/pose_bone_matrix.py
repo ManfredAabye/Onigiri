@@ -1,5 +1,5 @@
-import bpy
-from mathutils import Matrix, Vector
+import bpy # type: ignore
+from mathutils import Matrix, Vector # type: ignore
 
 
 def get_mat_offs(pose_bone):

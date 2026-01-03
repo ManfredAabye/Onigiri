@@ -1,13 +1,13 @@
-import bpy
-import mathutils
-from mathutils import Vector
+import bpy # type: ignore
+import mathutils # type: ignore
+from mathutils import Vector # type: ignore
 import decimal
 import importlib
-from math import *
+from math import * # type: ignore
 import re
 import os
 import traceback
-from bpy.app.handlers import persistent
+from bpy.app.handlers import persistent # type: ignore
 
 from . import mod_functions
 from .mod_functions import *

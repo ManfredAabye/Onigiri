@@ -1,6 +1,6 @@
-import bpy
-import mathutils
-from mathutils import Vector
+import bpy # type: ignore
+import mathutils # type: ignore
+from mathutils import Vector # type: ignore
 import decimal
 import importlib
 from math import *
@@ -9,7 +9,7 @@ import re
 from . import mod_data
 from .mod_data import *
 from . import mod_functions
-from .mod_functions import *
+from .mod_functions import * # type: ignore
 from . import utils
 
 

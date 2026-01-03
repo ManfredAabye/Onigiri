@@ -1,8 +1,8 @@
 import os
-import bpy
+import bpy # type: ignore
 import sys
 import time
-import mathutils
+import mathutils # type: ignore
 from . import rigutils
 from . import utils
 

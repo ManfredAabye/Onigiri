@@ -1,6 +1,6 @@
-import bpy
+import bpy # type: ignore
 import json
-import mathutils
+import mathutils # type: ignore
 import traceback
 from . import rigutils
 from . import utils

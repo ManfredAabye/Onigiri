@@ -1,6 +1,6 @@
-import bpy
+import bpy # type: ignore
 import math
-import mathutils
+import mathutils # type: ignore
 
 
 if 1 == 1:

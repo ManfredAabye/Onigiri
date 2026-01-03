@@ -1,11 +1,11 @@
 import uuid
 import time
 
-import mathutils
-from mathutils import Vector
+import mathutils # type: ignore
+from mathutils import Vector # type: ignore
 import decimal
 import importlib
-from math import *
+from math import * # type: ignore
 
 import re
 import os

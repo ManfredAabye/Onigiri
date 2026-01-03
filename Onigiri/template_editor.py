@@ -1,7 +1,7 @@
-import bpy
+import bpy # type: ignore
 import os
 import json
-from bpy_extras.io_utils import ImportHelper, ExportHelper
+from bpy_extras.io_utils import ImportHelper, ExportHelper # type: ignore
 
 from .ico import *
 from . import utils
@@ -441,7 +441,7 @@ class OnigiriLoadGenericTemplate(bpy.types.Operator, ImportHelper):
     bl_idname = "onigiri.load_generic_template"
     bl_label = "Load *.ccm, *.ctm"
 
-    filter_glob: bpy.props.StringProperty(default="*.ccm;*.ctm", options={"HIDDEN"})
+    filter_glob = bpy.props.StringProperty(default="*.ccm;*.ctm", options={"HIDDEN"})
 
     def execute(self, context):
         obj = bpy.data.objects
@@ -487,7 +487,7 @@ class OnigiriSaveCCM(bpy.types.Operator, ExportHelper):
 
     filename_ext = ".ccm"
 
-    filter_glob: bpy.props.StringProperty(default="*.ccm", options={"HIDDEN"})
+    filter_glob = bpy.props.StringProperty(default="*.ccm", options={"HIDDEN"})
 
     @classmethod
     def poll(cls, context):
@@ -552,7 +552,7 @@ class OnigiriSaveCTM(bpy.types.Operator, ExportHelper):
 
     filename_ext = ".ctm"
 
-    filter_glob: bpy.props.StringProperty(default="*.ctm", options={"HIDDEN"})
+    filter_glob = bpy.props.StringProperty(default="*.ctm", options={"HIDDEN"})
 
     @classmethod
     def poll(cls, context):

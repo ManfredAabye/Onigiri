@@ -1,9 +1,9 @@
 import os
-import bpy
+import bpy # type: ignore
 import sys
 from . import rigutils
 from . import utils
-import mathutils
+import mathutils # type: ignore
 
 
 if 1 == 1:

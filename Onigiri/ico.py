@@ -1,4 +1,4 @@
-import bpy
+import bpy # type: ignore
 import os
 from . import mod_settings
 from .mod_settings import *

@@ -1,6 +1,6 @@
 import os
 import gc
-import bpy
+import bpy # type: ignore
 import sys
 import uuid
 import time
@@ -9,7 +9,7 @@ from math import radians, degrees, asin, cos
 import struct
 import tempfile
 import traceback
-import mathutils
+import mathutils # type: ignore
 
 import xml.etree.ElementTree as ET
 

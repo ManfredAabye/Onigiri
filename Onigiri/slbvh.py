@@ -1,8 +1,8 @@
-import bpy
+import bpy # type: ignore
 import os
 import uuid
 from math import radians, degrees
-import mathutils
+import mathutils # type: ignore
 import tempfile
 import traceback
 from . import bvh_tools as bvht

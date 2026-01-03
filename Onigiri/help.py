@@ -1,4 +1,4 @@
-import bpy
+import bpy # type: ignore
 from .mod_settings import *
 
 def get_unique_name():

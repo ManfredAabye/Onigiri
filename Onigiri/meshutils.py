@@ -1,6 +1,6 @@
-import bpy
-import mathutils
-from mathutils import Vector
+import bpy # type: ignore
+import mathutils # type: ignore
+from mathutils import Vector # type: ignore
 import math
 from . import rigutils
 from . import utils

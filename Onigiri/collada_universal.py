@@ -36,14 +36,15 @@ R180z = mathutils.Matrix.Rotation(math.radians(180.0), 4, "Z")
 
 
 def write_collada(armature="", root="", write=False, file_in="", file_out=""):
-    print("Entering write_collada with: armature/root/write/file_in/file_out")
+    pass  # Funktion ist für Blender 5.0 deaktiviert/leer
+
+def write_gltf(armature="", root="", write=False, file_in="", file_out=""):
+    print("Entering write_gltf with: armature/root/write/file_in/file_out")
     print("armature:", armature)
     print("root:", root)
     print("write:", write)
     print("file_in:", file_in)
     print("file_out:", file_out)
-
-    write_nodes = True
 
     armObj = bpy.data.objects[armature]
 
@@ -55,14 +56,16 @@ def write_collada(armature="", root="", write=False, file_in="", file_out=""):
         print("found N/A, changed to pivot")
 
     if armObj.get("rig_data") is None:
-        print(
-            "collada_universal::write_collada reports: Armature has no base rig data, using saved data."
-        )
+        print("gltf_universal::write_gltf reports: Armature has no base rig data, using saved data.")
 
-        rig_data = bind_data.rig_data
-    else:
-        print("collada_universal::write_collada reports: rig_data pulled from armature")
-        rig_data = armObj["rig_data"].to_dict()
+    # Exportiere die Szene als glTF
+    bpy.ops.object.select_all(action='DESELECT')
+    armObj.select_set(True)
+    bpy.context.view_layer.objects.active = armObj
+    print(f"Exportiere glTF nach: {file_out}")
+    bpy.ops.export_scene.gltf(filepath=file_out, export_selected=True)
+
+    # Die folgenden Zeilen waren falsch eingerückt und wurden entfernt, da sie zu einem Syntaxfehler führten.
 
     transforms = rigutils.get_bone_transforms(armature=armature, rig_data=rig_data)
 

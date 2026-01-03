@@ -1,6 +1,6 @@
-import bpy
-import mathutils
-from mathutils import *
+import bpy # type: ignore
+import mathutils # type: ignore
+from mathutils import * # type: ignore
 import math
 from .presets import skeleton as skel
 from .presets import avatar_skeleton as skel_old
