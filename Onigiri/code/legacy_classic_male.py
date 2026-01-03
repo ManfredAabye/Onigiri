@@ -1,7 +1,7 @@
 # code segment for : Classic (m) Create-A-Mesh (Clothing Edition) A Poses.dkp
-import bpy
-from . import utils
-from . import rigutils
+import bpy # type: ignore
+from . import utils # type: ignore
+from . import rigutils # type: ignore
 
 
 # --------------------------------------------------------------------------------------------
