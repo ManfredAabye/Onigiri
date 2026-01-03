@@ -1,15 +1,17 @@
 # Onigiri 4
 
-Rigging addon for blender 4.1+ based on [Onigiri](https://github.com/nessaki/Onigiri)
+Rigging addon for blender 4.1.*to Blender 4.5.* based on [Onigiri](https://github.com/nessaki/Onigiri)
 
 Download from Releases area to obtain a .zip file which can be installed as a Blender Add-on.
 
 The .zip is created from the GitHub Repository Code using only the Onigiri directory.
 
----
+## Blender 5.0 Kompatibilität
 
-Rigging-Add-on für Blender 4.1+ basierend auf [Onigiri](https://github.com/nessaki/Onigiri)
+Dieses Add-on wurde für Blender 5.0 angepasst:
 
-Laden Sie die Datei im Bereich „Releases“ herunter, um eine ZIP-Datei zu erhalten, die als Blender-Add-on installiert werden kann.
+- Alle PropertyGroup- und Operator-Property-Deklarationen wurden auf das neue Format (Zuweisung mit Typ) umgestellt.
+- Die Codebasis ist jetzt formal Blender-5.0-kompatibel.
+- Die Collada-Exportfunktion wurde entfernt/ersetzt, stattdessen wird glTF empfohlen.
 
-Die ZIP-Datei wird aus dem GitHub-Repository-Code erstellt und verwendet ausschließlich das Onigiri-Verzeichnis.
+Bitte beachte: Für ältere Blender-Versionen (<5.0) ist weiterhin die alte Add-on-Version zu verwenden.
