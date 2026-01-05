@@ -77,7 +77,7 @@ def write_gltf(armature="", root="", write=False, file_in="", file_out=""):
 
     if armObj.get("onigiri_converted") is not None:
         print(
-            "collada::write_collada reports: converted mesh detected, adjusting export properties"
+            "gltf::write_gltf reports: converted mesh detected, adjusting export properties"
         )
         export_path_to_pelvis = True
         export_full_rig = False
@@ -115,7 +115,7 @@ def write_gltf(armature="", root="", write=False, file_in="", file_out=""):
         return True
 
     if 1 == 0:
-        print("Entering write_collada with: armature/root/write/file_in/file_out")
+        print("Entering write_gltf with: armature/root/write/file_in/file_out")
         print("armature:", armature)
         print("root:", root)
         print("write:", write)
@@ -123,18 +123,17 @@ def write_gltf(armature="", root="", write=False, file_in="", file_out=""):
         print("file_out:", file_out)
 
     print(
-        "Note that write_nodes is switched of at some point in collada.py (write_nodes = False)"
+        "Note: write_nodes is switched off at some point in gltf.py (write_nodes = False) [Legacy Collada-Kompatibilität]"
     )
     write_nodes = False
 
     rig_type = armObj.get("rig_type", "pivot")
-
     if armObj.get("rig_type") == "N/A":
         rig_type = "pivot"
         print("found N/A, changed to pivot")
 
     if not use_rig_data and not use_bind_data:
-        print("No pose type selected, defaulting to Rig Pose")
+        print("No pose type selected, defaulting to Rig Pose [glTF]")
         use_rig_data = True
 
     bind_pose = {}
@@ -150,7 +149,7 @@ def write_gltf(armature="", root="", write=False, file_in="", file_out=""):
 
     if use_rig_data:
 
-        print("Running rig_pose exporter")
+        print("Running rig_pose exporter [glTF]")
 
         write_nodes = True
 
@@ -159,12 +158,12 @@ def write_gltf(armature="", root="", write=False, file_in="", file_out=""):
 
         else:
             print(
-                "collada::write_collada reports: no base data was available for custom bind poses, using rig instead"
+                "gltf::write_gltf reports: no base data was available for custom bind poses, using rig instead [Legacy Collada-Kompatibilität]"
             )
 
             if not utils.can_select(object=armObj.name):
                 print(
-                    "collada::write_collada reports bad return from utils::can_select"
+                    "gltf::write_gltf reports bad return from utils::can_select [Legacy Collada-Kompatibilität]"
                 )
                 print(
                     "The rig has to be in view and selectable to generate bind data, did you choose the wrong export option?"

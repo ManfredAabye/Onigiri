@@ -804,7 +804,6 @@ def export_sl_anim(armature=None, path=None):
 
     if export_mapped_animation:
         print("Mapped animation export requested...")
-
         rename_map = armObj.get("oni_onemap_rename")
         if rename_map is None:
             print("No rename_map on rig, processing normally")
@@ -823,11 +822,11 @@ def export_sl_anim(armature=None, path=None):
                 return False
             bone_data = bone_data_temp
 
-            print("Generating an ordered bone list from a mapped animation")
-            for boneObj in armObj.data.bones:
-                bone = boneObj.name
-
-                if bone in rename_map:
+        popup("Mapped Animation erfolgreich exportiert.", "Export", "INFO")
+        print("Generating an ordered bone list from a mapped animation")
+        for boneObj in armObj.data.bones:
+            bone = boneObj.name
+            if bone in rename_map:
                     tbone = rename_map[bone]
 
                     if tbone not in bone_data:

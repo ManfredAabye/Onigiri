@@ -2,24 +2,24 @@
 import bpy
 
 
-# Collada-Export ist deaktiviert, Wrapper für glTF
+## Legacy Collada-Export deaktiviert, Wrapper für glTF
 def write_collada(armature="", root="", write=False, file_in="", file_out=""):
-    """Wrapper für write_gltf, damit alte Aufrufe weiterhin funktionieren."""
+    """[Legacy] Wrapper für write_gltf, damit alte Aufrufe weiterhin funktionieren."""
     return write_gltf(armature=armature, root=root, write=write, file_in=file_in, file_out=file_out)
 
-# edit_dae als Dummy-Wrapper für Kompatibilität
+## edit_dae als Dummy-Wrapper für Kompatibilität
 def edit_dae(*args, **kwargs):
-    print("edit_dae ist nicht mehr verfügbar. Bitte glTF verwenden.")
+    print("edit_dae ist nicht mehr verfügbar. Bitte glTF verwenden. [Legacy Collada-Funktion]")
     return None
 
 
 def write_gltf(armature="", root="", write=False, file_in="", file_out=""):
-    """Exportiert das angegebene Armature-Objekt als glTF (.glb/.gltf) Datei."""
+    """Exportiert das angegebene Armature-Objekt als glTF (.glb/.gltf) Datei. [Standard]"""
     armObj = bpy.data.objects[armature]
     bpy.ops.object.select_all(action='DESELECT')
     armObj.select_set(True)
     bpy.context.view_layer.objects.active = armObj
-    print(f"Exportiere glTF nach: {file_out}")
+    print(f"Exportiere glTF nach: {file_out} [glTF]")
     bpy.ops.export_scene.gltf(filepath=file_out, export_selected=True)
 
     # Falls benötigt, hier Variablen korrekt einrücken und verwenden
@@ -31,7 +31,7 @@ def write_gltf(armature="", root="", write=False, file_in="", file_out=""):
     bind_pose = {}
     joint_pose = {}
 
-    print("Running universal exporter")
+    print("Running universal exporter [glTF]")
 
     for pBone in armObj.pose.bones:
         dBone = pBone.bone

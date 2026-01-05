@@ -83,6 +83,7 @@ def get_properties(group=None):
     return presets
 
 
+## [Legacy] Exportfunktion für DAE, verwendet glTF als Standard
 def export_dae(matrices=None, joint="bone_data", file=None, real=None):
 
     testing = False
@@ -117,16 +118,15 @@ def export_dae(matrices=None, joint="bone_data", file=None, real=None):
         utils.activate(o)
         utils.make_single(o)
     utils.activate(o)
-    # glTF-Export
-    print("devkit::export_dae - Exportiere als glTF...")
+    # glTF-Export [Standard]
+    print("devkit::export_dae - Exportiere als glTF... [glTF]")
     bpy.ops.export_scene.gltf(
         filepath=file,
         export_format='GLTF_SEPARATE',
         use_selection=True,
         export_apply=True
     )
-
-    print("devkit::export_dae - glTF-Export abgeschlossen!")
+    print("devkit::export_dae - glTF-Export abgeschlossen! [glTF]")
     utils.set_state(state)
     return True
 

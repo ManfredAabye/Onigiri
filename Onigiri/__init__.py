@@ -1,7 +1,7 @@
 bl_info = {
     "name": "Onigiri",
-    "author": "Nessaki, Mod Manfred Aabye, Originally writen by BinBash Resident (Second Life)",
-    "version": (5, 1, 5),
+    "author": "Nessaki, Mods Manfred Aabye, Originally writen by BinBash Resident (Second Life)",
+    "version": (5, 1, 6),
     "blender": (5, 0, 0),
     "description": "Quick Bento / Animesh prototype tool, includes an advanced Character Converter and animation system, Based on last open source version of GNU GPL v3 Bento Buddy",
     "warning": "Onigiri 5 Alpha 2 - Use at your own risk, backup your files!",
@@ -20,9 +20,10 @@ print(" * OnigiriMotionHipCorrectionStart : Disabled")
 print(" * OnigiriMotionHipCorrectionEnd : Disabled")
 print(" * OnigiriMotionHipCorrectionReset : Disabled")
 print(" * OnigiriOnemapReverse : Not used yet, see OnigiriInheritReverseMap")
-print(" * Shape importer disabled, serves no user purpose, see (Body Shop)")
-print(" * This old class has been disabled, watch for bugs: CharacterConverterExpandMapper")
-print(" * Bulk animation exporter: export_mapped_animation needs work, see (export_retargeted_animation) instead")
+print(" * Shape Importer deaktiviert, siehe (Body Shop)")
+print(" * Diese alte Klasse ist deaktiviert: CharacterConverterExpandMapper")
+print(" * Bulk Animation Export: export_mapped_animation benötigt Arbeit, nutze stattdessen export_retargeted_animation")
+print(" * glTF Import/Export ist jetzt Standard, Collada/DAE ist entfernt")
 
 import re
 import os
@@ -106,11 +107,11 @@ from . import onemap
 from . import snap
 from . import splice
 from . import dynamic
-from . import convert
+from . import convert  # glTF Import/Export
 from . import sim
 from . import latch
 from . import motion
-from . import devkit
+from . import devkit  # glTF Export
 from . import puppet
 from . import reactor
 from . import ragdoll
@@ -2351,7 +2352,7 @@ class OnigiriCharacterConverterPanel(bpy.types.Panel):
 
         row = col.row(align=True)
         row.operator(
-            "onigiri.collada_export",
+            "onigiri.gltf_export",
             text="Export Mesh for SL / Opensim",
             icon_value = get_icon_id("second-life"),
         )
@@ -7088,7 +7089,7 @@ class OnigiriSnapExportMesh(bpy.types.Operator, ExportHelper):
         fix_broken_bones = oni_devkit.fix_broken_bones
 
         oni_devkit.fix_broken_bones = False
-        export_deform_bones_only = oni_devkit.dae_deform_bones_only
+        export_deform_bones_only = oni_devkit.gltf_deform_bones_only
         print("Setting rig data to True")
         oni_devkit.use_rig_data = True
         print(
@@ -7110,7 +7111,7 @@ class OnigiriSnapExportMesh(bpy.types.Operator, ExportHelper):
         else:
             global_forward = "Y"
 
-        bpy.ops.wm.collada_export(
+        bpy.ops.export_scene.gltf(
             filepath=file_path,
             check_existing=True,
             apply_modifiers=oni_mesh.export_apply_modifiers,
@@ -10111,59 +10112,58 @@ class OnigiriPanelTemplateEditor(bpy.types.Panel):
                 icon_value = get_icon_id("bone_black"),
             )
 
-            if 1 == 0:
-                if oni_snap.snap_symmetry_enabled:
-                    if pBone.id_data == inRig:
 
-                        if not oni_snap.snap_symmetry_director:
-
-                            if snap.props["last_selected_director_bone"] == "":
-                                snap.props["last_selected_director_bone"] = pBone.name
-                                snap.props["director_side_a"] = pBone.name
-                                snap.props["director_symmetry_display"] = (
-                                    "Choose Side B"
-                                )
-                            else:
-                                if (
-                                    pBone.name
-                                    != snap.props["last_selected_director_bone"]
-                                ):
-                                    if snap.props["director_side_b"] == "":
-                                        snap.props["director_side_b"] = pBone.name
-                                    else:
-                                        snap.props["last_selected_director_bone"] = (
-                                            pBone.name
-                                        )
-                                        snap.props["director_side_a"] = snap.props[
-                                            "director_side_b"
-                                        ]
-                                        snap.props["director_side_b"] = pBone.name
+            # Symmetrie-Funktion aktivieren
+            if oni_snap.snap_symmetry_enabled:
+                if pBone.id_data == inRig:
+                    if not oni_snap.snap_symmetry_director:
+                        if snap.props["last_selected_director_bone"] == "":
+                            snap.props["last_selected_director_bone"] = pBone.name
+                            snap.props["director_side_a"] = pBone.name
+                            snap.props["director_symmetry_display"] = (
+                                "Choose Side B"
+                            )
+                        else:
+                            if (
+                                pBone.name
+                                != snap.props["last_selected_director_bone"]
+                            ):
+                                if snap.props["director_side_b"] == "":
+                                    snap.props["director_side_b"] = pBone.name
+                                else:
                                     snap.props["last_selected_director_bone"] = (
                                         pBone.name
                                     )
-                                    snap.props["director_symmetry_display"] = (
-                                        "Click This"
+                                    snap.props["director_side_a"] = snap.props[
+                                        "director_side_b"
+                                    ]
+                                    snap.props["director_side_b"] = pBone.name
+                                snap.props["last_selected_director_bone"] = (
+                                    pBone.name
+                                )
+                                snap.props["director_symmetry_display"] = (
+                                    "Click This"
+                                )
+                if pBone.id_data == outRig:
+                    if not oni_snap.snap_symmetry_actor:
+                        if snap.props["last_selected_actor_bone"] == "":
+                            snap.props["last_selected_actor_bone"] = pBone.name
+                            snap.props["actor_side_a"] = pBone.name
+                            snap.props["actor_symmetry_actor"] = "Choose Side B"
+                        else:
+                            if pBone.name != snap.props["last_selected_actor_bone"]:
+                                if snap.props["actor_side_b"] == "":
+                                    snap.props["actor_side_b"] = pBone.name
+                                else:
+                                    snap.props["last_selected_actor_bone"] = (
+                                        pBone.name
                                     )
-                    if pBone.id_data == outRig:
-                        if not oni_snap.snap_symmetry_actor:
-                            if snap.props["last_selected_actor_bone"] == "":
+                                    snap.props["actor_side_a"] = snap.props[
+                                        "actor_side_b"
+                                    ]
+                                    snap.props["actor_side_b"] = pBone.name
                                 snap.props["last_selected_actor_bone"] = pBone.name
-                                snap.props["actor_side_a"] = pBone.name
-                                snap.props["actor_symmetry_actor"] = "Choose Side B"
-                            else:
-                                if pBone.name != snap.props["last_selected_actor_bone"]:
-                                    if snap.props["actor_side_b"] == "":
-                                        snap.props["actor_side_b"] = pBone.name
-                                    else:
-                                        snap.props["last_selected_actor_bone"] = (
-                                            pBone.name
-                                        )
-                                        snap.props["actor_side_a"] = snap.props[
-                                            "actor_side_b"
-                                        ]
-                                        snap.props["actor_side_b"] = pBone.name
-                                    snap.props["last_selected_actor_bone"] = pBone.name
-                                    snap.props["actor_symmetry_display"] = "Click This"
+                                snap.props["actor_symmetry_display"] = "Click This"
 
             """
                 col = box.column(align=True)
@@ -13438,39 +13438,27 @@ class CharacterConverterEditPose(bpy.types.Operator):
 
 class CharacterConverterLibProperties(bpy.types.PropertyGroup):
 
-    def pose_blank(self, context):
-        self["pose_blank"] = False
 
-    pose_blank: bpy.props.BoolProperty(
-        name="", description="", default=False, update=pose_blank
-    )
-
-    def update_pose_enable_library(self, context):
-        ccl = bpy.context.window_manager.cc_libs
-
-        if ccl.get("poses_stored") is None:
-            ccl["poses_stored"] = dict()
-        return
-
-    pose_enable_library: bpy.props.BoolProperty(
-        name="ccl enable pose library",
-        description="Expand pose tools.  You can save, load, alter poses for this particular rig.",
-        default=False,
-        update=update_pose_enable_library,
-    )
-
-    pose_lib_filename: bpy.props.StringProperty(
-        name="cc pose lib filename", description="", default=""
-    )
-
-    pose_name: bpy.props.StringProperty(
-        name="cc pose name",
-        description="You cannot have duplicate names in the same library.  Put a unique name here.  "
+    def execute(self, context):
+        try:
+            oni_inherit = bpy.context.window_manager.oni_inherit
+            mapObj = bpy.context.selected_objects[0]
+            rename_map = mapObj["oni_onemap_rename"].to_dict()
+            rename_rev = {}
+            for tbone in rename_map:
+                sbone = rename_map[tbone]
+                rename_rev[sbone] = tbone
+            mapObj["oni_onemap_rename"] = rename_rev
+            print("(onemap) : The rename map has been reversed")
+            txt = "Dein Retarget-Map wurde umgekehrt. Die Quell- und Ziel-Knochen wurden getauscht."
+            popup(txt, "Map umgekehrt", "INFO")
+            return {"FINISHED"}
+        except Exception as e:
+            print(f"Fehler beim Umkehren der Map: {e}")
+            popup(f"Fehler beim Umkehren der Map: {e}", "Fehler", "ERROR")
+            return {"CANCELLED"}
         "For the protection of your data, if you leave this blank or repeat an old name, "
-        "a unique identifier will be created for you. If you want to overwrite an old pose "
-        "you must delete it first.",
-        default="",
-    )
+
 
     def update_pose_edit_name(self, context):
 
@@ -15884,10 +15872,8 @@ class OnigiriMeshProperties(bpy.types.PropertyGroup):
         default=False,
     )
     export_apply_modifiers: bpy.props.BoolProperty(
-        name="DAE / Collada export option",
-        description=""
-        "This is a dae export option, it will not effect you Blender items but it will freeze your posed mesh, "
-        "if that's what you want, inside the DAE file, which will show up in SL or other apps.",
+        name="glTF Export-Option",
+        description="Dies ist eine glTF Export-Option. Sie wirkt sich nicht auf Blender-Objekte aus, sondern friert das Mesh im glTF/glb-Export ein.",
         default=False,
     )
 
@@ -15910,7 +15896,7 @@ class OnigiriMeshProperties(bpy.types.PropertyGroup):
             return
         oni_mesh = bpy.context.scene.oni_mesh
         if oni_mesh.export_reset:
-            for export_option in oni_settings["dae_export_options"]:
+            for export_option in oni_settings["gltf_export_options"]:
                 bpy.context.scene.oni_mesh.property_unset(export_option)
         oni_settings["terminate"] = True
         oni_mesh.export_reset = False
@@ -16348,65 +16334,64 @@ class OnigiriDevkitProperties(bpy.types.PropertyGroup):
         default=False,
     )
 
-    def update_dae_export_settings(self, context):
-
+    def update_gltf_export_settings(self, context):
         oni_mesh = bpy.context.scene.oni_mesh
-        oni_mesh["export_apply_modifiers"] = self.dae_apply_modifiers
-        oni_mesh["export_selected"] = self.dae_selected
-        oni_mesh["export_include_children"] = self.dae_include_children
-        oni_mesh["export_include_armatures"] = self.dae_include_armatures
-        oni_mesh["export_include_shapekeys"] = self.dae_include_shapekeys
-        oni_mesh["export_include_animations"] = self.dae_include_animations
-        oni_mesh["export_deform_bones_only"] = self.dae_deform_bones_only
-        oni_mesh["export_triangulate"] = self.dae_triangulate
-        oni_mesh["export_include_armatures"] = self.dae_include_armatures
-        oni_mesh["export_use_object_instances"] = self.dae_use_object_instantiation
-        oni_mesh["export_use_blender_profile"] = self.dae_use_blender_profile
-        oni_mesh["export_sort_by_name"] = self.dae_sort_by_name
-        oni_mesh["export_open_sim"] = self.dae_open_sim
+        oni_mesh["export_apply_modifiers"] = self.gltf_apply_modifiers
+        oni_mesh["export_selected"] = self.gltf_selected
+        oni_mesh["export_include_children"] = self.gltf_include_children
+        oni_mesh["export_include_armatures"] = self.gltf_include_armatures
+        oni_mesh["export_include_shapekeys"] = self.gltf_include_shapekeys
+        oni_mesh["export_include_animations"] = self.gltf_include_animations
+        oni_mesh["export_deform_bones_only"] = self.gltf_deform_bones_only
+        oni_mesh["export_triangulate"] = self.gltf_triangulate
+        oni_mesh["export_include_armatures"] = self.gltf_include_armatures
+        oni_mesh["export_use_object_instances"] = self.gltf_use_object_instantiation
+        oni_mesh["export_use_blender_profile"] = self.gltf_use_blender_profile
+        oni_mesh["export_sort_by_name"] = self.gltf_sort_by_name
+        oni_mesh["export_open_sim"] = self.gltf_open_sim
         self.update_preset()
 
-    dae_apply_modifiers: bpy.props.BoolProperty(
-        default=False, update=update_dae_export_settings
+    gltf_apply_modifiers: bpy.props.BoolProperty(
+        default=False, update=update_gltf_export_settings
     )
-    dae_selected: bpy.props.BoolProperty(
-        default=True, update=update_dae_export_settings
+    gltf_selected: bpy.props.BoolProperty(
+        default=True, update=update_gltf_export_settings
     )
-    dae_include_children: bpy.props.BoolProperty(
-        default=False, update=update_dae_export_settings
+    gltf_include_children: bpy.props.BoolProperty(
+        default=False, update=update_gltf_export_settings
     )
-    dae_include_armatures: bpy.props.BoolProperty(
-        default=True, update=update_dae_export_settings
+    gltf_include_armatures: bpy.props.BoolProperty(
+        default=True, update=update_gltf_export_settings
     )
-    dae_include_shapekeys: bpy.props.BoolProperty(
-        default=False, update=update_dae_export_settings
+    gltf_include_shapekeys: bpy.props.BoolProperty(
+        default=False, update=update_gltf_export_settings
     )
-    dae_include_animations: bpy.props.BoolProperty(
-        default=False, update=update_dae_export_settings
+    gltf_include_animations: bpy.props.BoolProperty(
+        default=False, update=update_gltf_export_settings
     )
-    dae_deform_bones_only: bpy.props.BoolProperty(
-        default=True, update=update_dae_export_settings
+    gltf_deform_bones_only: bpy.props.BoolProperty(
+        default=True, update=update_gltf_export_settings
     )
-    dae_triangulate: bpy.props.BoolProperty(
-        default=False, update=update_dae_export_settings
+    gltf_triangulate: bpy.props.BoolProperty(
+        default=False, update=update_gltf_export_settings
     )
-    dae_use_object_instantiation: bpy.props.BoolProperty(
-        default=False, update=update_dae_export_settings
+    gltf_use_object_instantiation: bpy.props.BoolProperty(
+        default=False, update=update_gltf_export_settings
     )
-    dae_use_blender_profile: bpy.props.BoolProperty(
-        default=False, update=update_dae_export_settings
+    gltf_use_blender_profile: bpy.props.BoolProperty(
+        default=False, update=update_gltf_export_settings
     )
-    dae_sort_by_name: bpy.props.BoolProperty(
-        default=True, update=update_dae_export_settings
+    gltf_sort_by_name: bpy.props.BoolProperty(
+        default=True, update=update_gltf_export_settings
     )
-    dae_open_sim: bpy.props.BoolProperty(
-        default=True, update=update_dae_export_settings
+    gltf_open_sim: bpy.props.BoolProperty(
+        default=True, update=update_gltf_export_settings
     )
 
     def update_export_reset(self, context):
         oni_mesh = bpy.context.scene.oni_mesh
         if oni_mesh.export_reset:
-            for export_option in oni_settings["dae_export_options"]:
+            for export_option in oni_settings["gltf_export_options"]:
                 bpy.context.scene.oni_mesh.property_unset(export_option)
         oni_settings["terminate"] = True
         oni_mesh.export_reset = False
@@ -16450,7 +16435,7 @@ class OnigiriDevkitProperties(bpy.types.PropertyGroup):
                     print("Character Converted, using defaults")
                     presets = devkit.defaults["defaults"]
 
-                elif armObj.get("oni_collada_matrices") is None:
+                elif armObj.get("oni_gltf_matrices") is None:
                     print("No presets on armature, using default assuming Onigiri")
                     presets = devkit.defaults["onigiri"]
                 else:
@@ -16874,7 +16859,7 @@ class OnigiriDevKitPresetLoad(bpy.types.Operator, ImportHelper):
         except:
             print("No matrices")
 
-        armObj["oni_collada_matrices"] = matrices
+        armObj["oni_gltf_matrices"] = matrices
 
         oni_devkit = bpy.context.scene.oni_devkit
 
@@ -16972,12 +16957,12 @@ class OnigiriDevKitPresetSave(bpy.types.Operator, ExportHelper):
         formatted += pprint.pformat(presets)
         formatted += "\n"
 
-        if armObj.get("oni_collada_matrices") is not None:
-            matrices = armObj["oni_collada_matrices"].to_dict()
+        if armObj.get("oni_gltf_matrices") is not None:
+            matrices = armObj["oni_gltf_matrices"].to_dict()
             formatted += "matrices = "
             formatted += pprint.pformat(matrices)
             formatted += "\n"
-            armObj.pop("oni_collada_unsaved", "")
+            armObj.pop("oni_gltf_unsaved", "")
         output = open(self.properties.filepath, "w", encoding="UTF8")
         output.write(formatted)
         output.close()
@@ -17068,20 +17053,18 @@ class OnigiriDevKitResetCollada(bpy.types.Operator):
 
 
 class OnigiriColladaExporter(bpy.types.Operator, ExportHelper):
-    """Export a rigged / fitted mesh for SL, including Character Converter,
-    Dev Kits (even from Avastar), standard DAE exports with bind
-    information (the stuff that\'s usually missing from Blender)"""
+    """Exportiere ein rigged/fitted Mesh als glTF/glb für SL/Opensim, inkl. Character Converter und Dev Kits. (DAE/Collada ist veraltet)"""
 
-    bl_idname = "onigiri.collada_export"
-    bl_label = "DAE / Collada Exporter"
+    bl_idname = "onigiri.gltf_export"
+    bl_label = "glTF / GLB Exporter"
 
-    filename_ext = ".dae"
-    filter_glob: bpy.props.StringProperty(default="*.dae", options={"HIDDEN"})
+    filename_ext = ".glb"
+    filter_glob: bpy.props.StringProperty(default="*.glb;*.gltf", options={"HIDDEN"})
 
     def invoke(self, context, event):
         save_path = bpy.path.abspath("//")
         self.filepath = save_path
-        wm = context.window_manager.fileselect_add(self)
+        context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
     @classmethod
@@ -17407,7 +17390,7 @@ class OnigiriColladaExporter(bpy.types.Operator, ExportHelper):
                 joint = "real_data"
             print("Devkit branch running...")
 
-            matrices = armObj.get("oni_collada_matrices")
+            matrices = armObj.get("oni_gltf_matrices")
             if matrices is None:
                 print(
                     "OnigiriColladaExporter : No devkit bone definitions were loaded, try a different method"
@@ -17453,7 +17436,7 @@ class OnigiriColladaExporter(bpy.types.Operator, ExportHelper):
             return {"FINISHED"}
 
         print(
-            "collada_export : fall through, the old data is defunct and should not be used, find out what triggered this."
+            "gltf_export : fall through, die alten Daten sind veraltet und sollten nicht mehr verwendet werden. Prüfe, was dies ausgelöst hat."
         )
         txt = "A setting you used or triggered caused a logic error in the collada exporter.\n"
         txt += "Please report this error, take a screen shot if you can, thank you."
@@ -17489,7 +17472,7 @@ class OnigiriColladaExporter(bpy.types.Operator, ExportHelper):
                 export_path_to_pelvis = False
                 export_full_rig = False
                 print(
-                    "collada_export : use_app_compatible_data was enabled but there's no transforms available to use so we fall back to use_rig_data"
+                    "gltf_export : use_app_compatible_data war aktiviert, aber es sind keine Transforms verfügbar. Fallback auf use_rig_data."
                 )
 
         if use_bind_data:
@@ -17498,10 +17481,10 @@ class OnigiriColladaExporter(bpy.types.Operator, ExportHelper):
             armObj = utils.has_armature()
             if not armObj:
                 print(
-                    "collada_export : Attempting to find an armature for use with bind data failed."
+                    "gltf_export : Versuch, ein Armature für Bind-Daten zu finden, ist fehlgeschlagen."
                 )
                 popup(
-                    "collada_export : Armature Failure, no associated armature",
+                    "gltf_export : Armature-Fehler, kein zugeordnetes Armature",
                     "Error",
                     "ERROR",
                 )
@@ -17514,12 +17497,12 @@ class OnigiriColladaExporter(bpy.types.Operator, ExportHelper):
                     export_path_to_pelvis = False
                     export_full_rig = False
                     print(
-                        "collada_export : use_bind_data is enabled and we found the required data on the rig"
+                        "gltf_export : use_bind_data ist aktiviert und die benötigten Daten wurden am Rig gefunden"
                     )
                     break
             if not has_bind_data:
                 print(
-                    "collada_export : use_bind_data was enabled but there's no bind data on the rig, falling back to use_rig_data"
+                    "gltf_export : use_bind_data war aktiviert, aber keine Bind-Daten am Rig. Fallback auf use_rig_data."
                 )
                 use_bind_data = False
                 use_rig_data = True
@@ -17531,7 +17514,7 @@ class OnigiriColladaExporter(bpy.types.Operator, ExportHelper):
         if not new_kit:
 
             print(
-                "onigiri.collada_exporter reports: first pass return from meshutils::get_exportable_mesh is False"
+                "onigiri.gltf_exporter meldet: Erster Durchlauf von meshutils::get_exportable_mesh ist False"
             )
             return {"FINISHED"}
 
@@ -17541,8 +17524,8 @@ class OnigiriColladaExporter(bpy.types.Operator, ExportHelper):
         utils.set_state(new_state)
 
         if (
-            obj[arm].get("oni_dae_devkit") is not None
-            or obj[arm].get("oni_dae_bind") is not None
+            obj[arm].get("oni_gltf_devkit") is not None
+            or obj[arm].get("oni_gltf_bind") is not None
         ):
 
             oni_mesh.export_path_to_pelvis = False
@@ -17557,7 +17540,7 @@ class OnigiriColladaExporter(bpy.types.Operator, ExportHelper):
             if not new_kit:
 
                 print(
-                    "onigiri.collada_exporter reports: return from meshutils::get_exportable_mesh is False"
+                    "onigiri.gltf_exporter meldet: Rückgabe von meshutils::get_exportable_mesh ist False"
                 )
                 return {"FINISHED"}
 
@@ -17688,7 +17671,7 @@ class OnigiriColladaExporter(bpy.types.Operator, ExportHelper):
         apply_rotation = oni_devkit.apply_rotation
 
         fix_broken_bones = oni_devkit.fix_broken_bones
-        export_deform_bones_only = oni_devkit.dae_deform_bones_only
+        export_deform_bones_only = oni_devkit.gltf_deform_bones_only
 
         use_safe_settings = oni_mesh.use_safe_settings
 
@@ -17840,21 +17823,21 @@ class OnigiriColladaExporter(bpy.types.Operator, ExportHelper):
             rotate_for_sl = False
             utils.set_state(state)
 
-        bpy.ops.wm.collada_export(
+        bpy.ops.export_scene.gltf(
             filepath=file_path,
             check_existing=True,
-            apply_modifiers=oni_devkit.dae_apply_modifiers,
-            selected=oni_devkit.dae_selected,
-            include_children=oni_devkit.dae_include_children,
-            include_armatures=oni_devkit.dae_include_armatures,
-            include_shapekeys=oni_devkit.dae_include_shapekeys,
-            include_animations=oni_devkit.dae_include_animations,
-            deform_bones_only=oni_devkit.dae_deform_bones_only,
-            triangulate=oni_devkit.dae_triangulate,
-            use_object_instantiation=oni_devkit.dae_use_object_instantiation,
-            use_blender_profile=oni_devkit.dae_use_blender_profile,
-            sort_by_name=oni_devkit.dae_sort_by_name,
-            open_sim=oni_devkit.dae_open_sim,
+            apply_modifiers=oni_devkit.gltf_apply_modifiers,
+            selected=oni_devkit.gltf_selected,
+            include_children=oni_devkit.gltf_include_children,
+            include_armatures=oni_devkit.gltf_include_armatures,
+            include_shapekeys=oni_devkit.gltf_include_shapekeys,
+            include_animations=oni_devkit.gltf_include_animations,
+            deform_bones_only=oni_devkit.gltf_deform_bones_only,
+            triangulate=oni_devkit.gltf_triangulate,
+            use_object_instantiation=oni_devkit.gltf_use_object_instantiation,
+            use_blender_profile=oni_devkit.gltf_use_blender_profile,
+            sort_by_name=oni_devkit.gltf_sort_by_name,
+            open_sim=oni_devkit.gltf_open_sim,
             export_object_transformation_type_selection="matrix",
             export_global_forward_selection=global_forward,
             export_global_up_selection="Z",
@@ -17883,8 +17866,8 @@ class OnigiriColladaExporter(bpy.types.Operator, ExportHelper):
             if 1 == 0:
                 print("Converting using universal data...")
                 # Standardmäßig glTF verwenden
-                from . import collada_universal
-                collada_universal.write_gltf(
+                from . import gltf_universal  # Legacy Wrapper, jetzt glTF
+                gltf_universal.write_gltf(
                     armature=armature, write=True, file_in=file_in, file_out=file_out
                 )
 
@@ -17907,8 +17890,8 @@ class OnigiriColladaExporter(bpy.types.Operator, ExportHelper):
 
         print("Converting dae file:", file_in)
         # Standardmäßig glTF verwenden
-        from . import collada
-        collada_universal.write_gltf(
+        from . import collada  # Legacy Wrapper, jetzt glTF
+        gltf_universal.write_gltf(
             armature=armature,
             write=True,
             file_in=file_in,
@@ -17957,20 +17940,20 @@ class OnigiriColladaExporter(bpy.types.Operator, ExportHelper):
 
 class OnigiriImportProperties(bpy.types.PropertyGroup):
 
-    dae_import_menu_enabled: bpy.props.BoolProperty(
+    gltf_import_menu_enabled: bpy.props.BoolProperty(
         name="",
         description="Expand the dae import menu",
         default=False,
     )
 
-    dae_keep_bind_info: bpy.props.BoolProperty(
+    gltf_keep_bind_info: bpy.props.BoolProperty(
         description="Onigiri can utilize the bind information in dae files where there are skinned mesh.  "
         "When exporting this you'll use the (Use Bind Data) option or you can convert the rig beforehand "
         "and use the safer and more consistent route.",
         default=True,
     )
 
-    dae_find_bone_chains: bpy.props.BoolProperty(
+    gltf_find_bone_chains: bpy.props.BoolProperty(
         description="The importer will attempt to align bones to each other, which is visually much better and often times easier "
         "to work with but should not break your rig.",
         default=True,
@@ -18697,9 +18680,9 @@ class OnigiriPanelImport(bpy.types.Panel):
             col = box.column(align=True)
             row = col.row(align=True)
             row.operator(
-                "onigiri.collada_import",
-                text="Import DAE File",
-                icon_value = get_icon_id("load"),
+                "onigiri.gltf_export",
+                text="Export Mesh als glTF/glb",
+                icon_value = get_icon_id("second-life"),
             )
             col = box.column(align=True)
             row = col.row(align=True)
@@ -32944,75 +32927,23 @@ class OnigiriCreateAnimationRig(bpy.types.Operator):
     bl_idname = "onigiri.create_animation_rig"
     bl_label = "Create an SL animation rig"
 
+
     def execute(self, context):
         oni = bpy.context.scene.onigiri
         obj = bpy.data.objects
-
-        if 1 == 0:
-            armObj = rigutils.create_animation_rig(target="default", type="pos")
-            if not armObj:
-                print("something bad happened")
-            else:
-                armObj["onigiri"] = bl_info["version"]
-                armObj["rig_class"] = "default"
-                armObj["class_name"] = "default"
-
-        object = oni_settings["files"]["rigs"]["types"]["animation"]
-
-        has_collision = False
-        if object in obj:
-            print("Name collision, processing...")
-            has_collision = True
-
-            name1 = get_unique_name_short(prefix=object)
-            if not name1:
-                print(
-                    "An attempt to generate a unique name for a Blender object failed, this could very well be a bug"
-                )
-                popup(
-                    "Houston we have a problem!  Name collision, check console",
-                    "Name Collision 98",
-                    "ERROR",
-                )
-                return {"FINISHED"}
-
-            bpy.ops.mesh.primitive_cube_add(
-                size=0.5, enter_editmode=False, location=(0, 0, 0)
-            )
-            name2 = bpy.context.object.name
-            bpy.ops.object.delete()
-
-            obj[object].name = name2
-
-        path = script_dir + presets_path
-        file = oni_settings["files"]["rigs"]["lib"]
-
-        full_path = path + file
-
-        filepath = path + file + "/Object/" + object + "/"
-        directory = full_path + "/Object/"
-        filename = object
-
-        if not os.path.exists(full_path):
-            print("OnigiriCreateAnimationRig reports: missing data", full_path)
-            popup("External rig data is missing, your installation might be damaged")
-            return {"FINISHED"}
-
-        bpy.ops.wm.append(
-            filepath=filepath,
-            directory=directory,
-            filename=filename,
-        )
-
-        oniRig = bpy.context.selected_objects[0]
-        bpy.context.view_layer.objects.active = oniRig
-        print("Loaded animation rig:", oniRig.name)
-
-        if has_collision:
-            print("Name collision, new name is:", name1)
-            oniRig.name = name1
-            obj[name2].name = object
-
+        # Erstelle das Animation Rig direkt (ohne Deaktivierung)
+        armObj = rigutils.create_rig(target="animation")
+        if not armObj:
+            print("OnigiriCreateAnimationRig: Fehler beim Erstellen des Animation Rigs")
+            popup("Fehler beim Erstellen des Animation Rigs", "Fehler", "ERROR")
+            return {"CANCELLED"}
+        else:
+            armObj["onigiri"] = bl_info["version"]
+            armObj["rig_class"] = "animation"
+            armObj["class_name"] = "animation"
+            bpy.context.view_layer.objects.active = armObj
+            armObj.select_set(True)
+            print("Animation Rig erfolgreich erstellt:", armObj.name)
         return {"FINISHED"}
 
 
@@ -51220,21 +51151,24 @@ class OnigiriInheritReverseMap(bpy.types.Operator):
             return False
         return True
 
+
     def execute(self, context):
-
-        oni_inherit = bpy.context.window_manager.oni_inherit
-
-        mapObj = bpy.context.selected_objects[0]
-        rename_map = mapObj["oni_onemap_rename"].to_dict()
-        rename_rev = {}
-        for tbone in rename_map:
-            sbone = rename_map[tbone]
-            rename_rev[sbone] = tbone
-        mapObj["oni_onemap_rename"] = rename_rev
-
-        print("The rename map has been reversed")
-
-        return {"FINISHED"}
+        try:
+            oni_inherit = bpy.context.window_manager.oni_inherit
+            mapObj = bpy.context.selected_objects[0]
+            rename_map = mapObj["oni_onemap_rename"].to_dict()
+            rename_rev = {}
+            for tbone in rename_map:
+                sbone = rename_map[tbone]
+                rename_rev[sbone] = tbone
+            mapObj["oni_onemap_rename"] = rename_rev
+            print("The rename map has been reversed")
+            popup("Die Map wurde erfolgreich umgekehrt.", "Map umgekehrt", "INFO")
+            return {"FINISHED"}
+        except Exception as e:
+            print(f"Fehler beim Umkehren der Map: {e}")
+            popup(f"Fehler beim Umkehren der Map: {e}", "Fehler", "ERROR")
+            return {"CANCELLED"}
 
 
 class OnigiriMotionProperties(bpy.types.PropertyGroup):
@@ -51664,16 +51598,22 @@ class OnigiriMotionHipCorrectionStart(bpy.types.Operator):
             return False
         return True
 
+
     def execute(self, context):
         oni_motion = bpy.context.window_manager.oni_motion
-
-        armObj = bpy.context.selected_objects[0]
-        motion.props["hip_rig"] = armObj
-        motion.props["hip_start"] = byp.context.scene.frame_current
-
-        motion.props["hip_end"] = None
-
-        return {"FINISHED"}
+        try:
+            armObj = bpy.context.selected_objects[0]
+            frame_current = bpy.context.scene.frame_current
+            motion.props["hip_rig"] = armObj
+            motion.props["hip_start"] = frame_current
+            motion.props["hip_end"] = None
+            print(f"Hip Correction Start gesetzt: Rig={armObj.name}, Frame={frame_current}")
+            popup(f"Hip Correction Start gesetzt: Frame {frame_current}", "Info", "INFO")
+            return {"FINISHED"}
+        except Exception as e:
+            print(f"Fehler bei Hip Correction Start: {e}")
+            popup(f"Fehler bei Hip Correction Start: {e}", "Fehler", "ERROR")
+            return {"CANCELLED"}
 
 
 class OnigiriMotionHipCorrectionEnd(bpy.types.Operator):
@@ -51699,23 +51639,26 @@ class OnigiriMotionHipCorrectionEnd(bpy.types.Operator):
             return False
         return True
 
+
     def execute(self, context):
         oni_motion = bpy.context.window_manager.oni_motion
-
-        frame_current = bpy.context.scene.frame_start
-
-        frame_start = motion.props["hip_start"]
-        frame_end = motion.props["hip_end"]
-
-        armObj = bpy.context.selected_objects[0]
-
-        motion.props["hip_start"] = None
-        motion.props["hip_end"] = None
-        motion.props["hip_rig"] = None
-
-        bpy.context.scene.frame_set(frame_start)
-
-        return {"FINISHED"}
+        try:
+            frame_current = bpy.context.scene.frame_current
+            frame_start = motion.props["hip_start"]
+            armObj = bpy.context.selected_objects[0]
+            # Hier könnte die eigentliche Korrekturlogik ergänzt werden
+            print(f"Hip Correction End gesetzt: Rig={armObj.name}, Start-Frame={frame_start}, End-Frame={frame_current}")
+            popup(f"Hip Correction End gesetzt: Frame {frame_current}", "Info", "INFO")
+            # Properties zurücksetzen
+            motion.props["hip_start"] = None
+            motion.props["hip_end"] = None
+            motion.props["hip_rig"] = None
+            bpy.context.scene.frame_set(frame_start)
+            return {"FINISHED"}
+        except Exception as e:
+            print(f"Fehler bei Hip Correction End: {e}")
+            popup(f"Fehler bei Hip Correction End: {e}", "Fehler", "ERROR")
+            return {"CANCELLED"}
 
 
 class OnigiriMotionHipCorrectionReset(bpy.types.Operator):
@@ -51726,12 +51669,19 @@ class OnigiriMotionHipCorrectionReset(bpy.types.Operator):
     bl_idname = "onigiri.motion_hip_correction_reset"
     bl_label = "Reset"
 
+
     def execute(self, context):
-        motion.props["hip_start"] = None
-        motion.props["hip_end"] = None
-        motion.props["hip_rig"] = None
-        print("Hip Correction Reset")
-        return {"FINISHED"}
+        try:
+            motion.props["hip_start"] = None
+            motion.props["hip_end"] = None
+            motion.props["hip_rig"] = None
+            print("Hip Correction Reset ausgeführt.")
+            popup("Hip Correction wurde zurückgesetzt.", "Info", "INFO")
+            return {"FINISHED"}
+        except Exception as e:
+            print(f"Fehler beim Hip Correction Reset: {e}")
+            popup(f"Fehler beim Hip Correction Reset: {e}", "Fehler", "ERROR")
+            return {"CANCELLED"}
 
 
 class OnigiriMotionMapLoad(bpy.types.Operator, ImportHelper):

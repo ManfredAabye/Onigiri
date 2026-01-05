@@ -3,16 +3,18 @@ import bpy
 
 
 
-# Wrapper für glTF-Import (ersetzt DAE)
+## [Legacy] Wrapper für glTF-Import (ersetzt DAE)
 def import_dae_kit(file_in=None, file_out=None, rebuild=False):
-    """Wrapper für glTF-Import (ersetzt DAE)."""
+    """[Legacy] Wrapper für glTF-Import (ersetzt DAE)."""
     return import_gltf_kit(file_in=file_in, file_out=file_out, rebuild=rebuild)
-# glTF-Importfunktion
+
+## glTF-Importfunktion [Standard]
 def import_gltf_kit(file_in=None, file_out=None, rebuild=False):
-    """Importiert ein glTF-Kit."""
+    """Importiert ein glTF-Kit. [Standard]"""
     if file_in:
         bpy.ops.import_scene.gltf(filepath=file_in)
     # Optional: Nachbearbeitung, falls benötigt
+    print(f"Importiere glTF-Kit aus: {file_in} [glTF]")
     return True
 
     if 1 == 0:
