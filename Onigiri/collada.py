@@ -1,62 +1,20 @@
+
+# glTF-Export statt Collada
 import bpy
-import math
-import mathutils
-import traceback
 
-from . import pill
-from . import rigutils
-from . import utils
-from . import devkit
-from .presets import volumes
-
-from .presets import skeleton as skel
-
-
-from .presets import bind_data
-from .presets import base_data
-from .presets import rig_data as rd
-from .presets import real_rig_data
-
-import xml.etree.ElementTree as ET
-
-Z90 = mathutils.Matrix(
-    (
-        (0.0000, 1.0000, 0.0000, 0.0000),
-        (-1.0000, 0.0000, 0.0000, 0.0000),
-        (0.0000, 0.0000, 1.0000, 0.0000),
-        (0.0000, 0.0000, 0.0000, 1.0000),
-    )
-)
-
-Z90I = Z90.inverted()
-
-
-R90x = mathutils.Matrix.Rotation(math.radians(90.0), 4, "X")
-R90y = mathutils.Matrix.Rotation(math.radians(90.0), 4, "Y")
-R90 = mathutils.Matrix.Rotation(math.radians(90.0), 4, "Z")
-R90I = R90.inverted()
-R90z = R90
-
-R180x = mathutils.Matrix.Rotation(math.radians(180.0), 4, "X")
-R180y = mathutils.Matrix.Rotation(math.radians(180.0), 4, "Y")
-R180z = mathutils.Matrix.Rotation(math.radians(180.0), 4, "Z")
-
-
-def write_collada(
-    armature="", root="", write=False, file_in="", file_out="", real_armature=None
-):
+def export_gltf(armature="", file_out=""):
+    """Exportiert das angegebene Armature-Objekt als glTF (.glb/.gltf) Datei."""
     armObj = bpy.data.objects[armature]
+    bpy.ops.object.select_all(action='DESELECT')
+    armObj.select_set(True)
+    bpy.context.view_layer.objects.active = armObj
+    print(f"Exportiere glTF nach: {file_out}")
+    bpy.ops.export_scene.gltf(filepath=file_out, export_selected=True)
 
-    realObj = bpy.data.objects[real_armature]
 
-    oni_devkit = bpy.context.scene.oni_devkit
-
-    rig_class = rigutils.get_rig_class()
-    if rig_class != "":
-        rig_data = getattr(rd, rig_class)
-    else:
-
-        rig_data = rigutils.get_rig_data(armObj)
+# Kompatibilität: Alias für bisherigen Funktionsnamen
+def write_gltf(armature="", root="", write=False, file_in="", file_out=""):
+    export_gltf(armature=armature, file_out=file_out)
 
     oni_mesh = bpy.context.scene.oni_devkit
 

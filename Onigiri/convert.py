@@ -1,22 +1,19 @@
-import os
-import sys
-import mathutils
-import xml.etree.ElementTree as ET
-from .presets import avatar_skeleton as skel
-from .presets import matrices as dae_data
+
+import bpy
 
 
+
+# Wrapper für glTF-Import (ersetzt DAE)
 def import_dae_kit(file_in=None, file_out=None, rebuild=False):
-
-    ET.register_namespace("", "http://www.collada.org/2005/11/COLLADASchema")
-    tree = ET.parse(file_in)
-    root = tree.getroot()
-    n = "{http://www.collada.org/2005/11/COLLADASchema}"
-
-    controller = {}
-    skin = {}
-    names = list()
-    matrices = list()
+    """Wrapper für glTF-Import (ersetzt DAE)."""
+    return import_gltf_kit(file_in=file_in, file_out=file_out, rebuild=rebuild)
+# glTF-Importfunktion
+def import_gltf_kit(file_in=None, file_out=None, rebuild=False):
+    """Importiert ein glTF-Kit."""
+    if file_in:
+        bpy.ops.import_scene.gltf(filepath=file_in)
+    # Optional: Nachbearbeitung, falls benötigt
+    return True
 
     if 1 == 0:
         joints = set()

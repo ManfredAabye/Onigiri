@@ -1,90 +1,32 @@
+
 import bpy
-import math
-import mathutils
-import traceback
-
-from . import pill
-from . import rigutils
-
-from .presets import volumes
-from .presets import skeleton as skel
-
-from .presets import bind_data
-
-import xml.etree.ElementTree as ET
-
-Z90 = mathutils.Matrix(
-    (
-        (0.0000, 1.0000, 0.0000, 0.0000),
-        (-1.0000, 0.0000, 0.0000, 0.0000),
-        (0.0000, 0.0000, 1.0000, 0.0000),
-        (0.0000, 0.0000, 0.0000, 1.0000),
-    )
-)
-
-Z90I = Z90.inverted()
-
-R90x = mathutils.Matrix.Rotation(math.radians(90.0), 4, "X")
-R90y = mathutils.Matrix.Rotation(math.radians(90.0), 4, "Y")
-R90 = mathutils.Matrix.Rotation(math.radians(90.0), 4, "Z")
-R90I = R90.inverted()
-R90z = R90
-
-R180x = mathutils.Matrix.Rotation(math.radians(180.0), 4, "X")
-R180y = mathutils.Matrix.Rotation(math.radians(180.0), 4, "Y")
-R180z = mathutils.Matrix.Rotation(math.radians(180.0), 4, "Z")
 
 
+# Collada-Export ist deaktiviert, Wrapper für glTF
 def write_collada(armature="", root="", write=False, file_in="", file_out=""):
-    pass  # Funktion ist für Blender 5.0 deaktiviert/leer
+    """Wrapper für write_gltf, damit alte Aufrufe weiterhin funktionieren."""
+    return write_gltf(armature=armature, root=root, write=write, file_in=file_in, file_out=file_out)
+
+# edit_dae als Dummy-Wrapper für Kompatibilität
+def edit_dae(*args, **kwargs):
+    print("edit_dae ist nicht mehr verfügbar. Bitte glTF verwenden.")
+    return None
+
 
 def write_gltf(armature="", root="", write=False, file_in="", file_out=""):
-    print("Entering write_gltf with: armature/root/write/file_in/file_out")
-    print("armature:", armature)
-    print("root:", root)
-    print("write:", write)
-    print("file_in:", file_in)
-    print("file_out:", file_out)
-
+    """Exportiert das angegebene Armature-Objekt als glTF (.glb/.gltf) Datei."""
     armObj = bpy.data.objects[armature]
-
-    rig_type = armObj.get("rig_type", "pivot")
-
-    print("Checking for old unusable rig type...")
-    if armObj.get("rig_type") == "N/A":
-        rig_type = "pivot"
-        print("found N/A, changed to pivot")
-
-    if armObj.get("rig_data") is None:
-        print("gltf_universal::write_gltf reports: Armature has no base rig data, using saved data.")
-
-    # Exportiere die Szene als glTF
     bpy.ops.object.select_all(action='DESELECT')
     armObj.select_set(True)
     bpy.context.view_layer.objects.active = armObj
     print(f"Exportiere glTF nach: {file_out}")
     bpy.ops.export_scene.gltf(filepath=file_out, export_selected=True)
 
-    # Die folgenden Zeilen waren falsch eingerückt und wurden entfernt, da sie zu einem Syntaxfehler führten.
-
-    transforms = rigutils.get_bone_transforms(armature=armature, rig_data=rig_data)
-
-    ccp = bpy.context.window_manager.cc_props
-    oni_mesh = bpy.context.scene.oni_mesh
-
-    if 1 == 0:
-        use_rig_data = oni_mesh.use_rig_data
-        use_bind_data = oni_mesh.use_bind_data
-        process_volume_bones = oni_mesh.process_volume_bones
-        rotate_for_sl = oni_mesh.rotate_for_sl
-
-        use_offset_volume = oni_mesh.use_offset_volume
-
-        use_offset_location = oni_mesh.use_offset_location
-
-        use_offset_rotation = oni_mesh.use_offset_rotation
-
-        use_offset_scale = oni_mesh.use_offset_scale
+    # Falls benötigt, hier Variablen korrekt einrücken und verwenden
+    # use_offset_volume = oni_mesh.use_offset_volume
+    # use_offset_location = oni_mesh.use_offset_location
+    # use_offset_rotation = oni_mesh.use_offset_rotation
+    # use_offset_scale = oni_mesh.use_offset_scale
 
     bind_pose = {}
     joint_pose = {}

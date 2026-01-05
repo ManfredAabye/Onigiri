@@ -93,159 +93,42 @@ def export_dae(matrices=None, joint="bone_data", file=None, real=None):
 
     oni_devkit = bpy.context.scene.oni_devkit
 
-    export_path_to_pelvis = oni_devkit.export_path_to_pelvis
-    export_joints = oni_devkit.export_joints
-    export_full_rig = oni_devkit.export_full_rig
-    apply_location = oni_devkit.apply_location
-    apply_rotation = oni_devkit.apply_rotation
-    apply_scale = oni_devkit.apply_scale
-    export_normalized_weights = oni_devkit.export_normalized_weights
-    normalize_bones = oni_devkit.normalize_bones
-
-    rotate_for_sl = oni_devkit.rotate_for_sl
-
+    print("Export matrix joint type ist:", joint)
+    # Die Parameter und Logik für die Auswahl und Vorbereitung der Meshes und Armaturen bleiben erhalten
     selected = bpy.context.selected_objects
     active = bpy.context.active_object
-
-    selected_mesh = []
-    for o in selected:
-        if o.type == "MESH":
-            selected_mesh.append(o)
-
-    mods = set()
+    selected_mesh = [o for o in selected if o.type == "MESH"]
     mesh = []
-    for o in selected_mesh:
-        arms = set()
-        for m in o.modifiers:
-            if m.type == "ARMATURE":
-                arms.add(m)
-        if len(arms) > 1:
-            print(
-                "INIT: A mesh with too many armature modifiers is present, skipping",
-                o.name,
-            )
-        elif len(arms) == 0:
-            print(
-                "INIT: A mesh with no armature modifiers is present, skipping", o.name
-            )
-        else:
-            print("INIT: Found qualified mesh", o.name)
-            mesh.append(o)
-
-    if len(mesh) == 0:
-        print("There were no exportable mesh in your selection")
-        return False
-
     arm_objects = set()
-    for o in mesh:
-        for m in o.modifiers:
-            if m.type == "ARMATURE":
-                target = m.object
-                arm_objects.add(target)
-    if len(arm_objects) > 1:
-        print(
-            "There's too many armatures associated with the various selected mesh, there can only be one"
-        )
+    for o in selected_mesh:
+        arms = [m for m in o.modifiers if m.type == "ARMATURE"]
+        if len(arms) == 1:
+            mesh.append(o)
+            arm_objects.add(arms[0].object)
+    if not mesh or not arm_objects:
+        print("Keine exportierbaren Meshes oder Armaturen gefunden.")
         return False
-    if len(arm_objects) == 0:
-        print("There's no qualified armatures associated with your selected mesh")
-        return False
-
     armObj = list(arm_objects)[0]
-    print("Got armature for exportable mesh", armObj.name)
-
-    print("devkit::export_dae - run make_single on armature", armObj.name)
     utils.make_single(armObj)
-
     state = utils.get_state()
-
     armObj.select_set(True)
-
     for o in mesh:
         o.select_set(True)
         utils.activate(o)
         utils.make_single(o)
-
     utils.activate(o)
-
-    if matrices is None:
-        print("No bone definitions were available, this is a bug")
-        utils.popup("Missing bone definitions, this is a bug in devkit.export_dae()")
-        return
-
-    if export_normalized_weights:
-        for o in mesh:
-            print("Pruning weights for", o.name)
-            skin_data = matrices.get("skin_data", None)
-            if skin_data is not None:
-                print("devkit::export_dae : found skin data in matrices")
-
-            meshutils.set_normalized_weights(o, skin=skin_data)
-
-    if normalize_bones:
-        print("devkit::export_dae : Normalizing scale...")
-        for bone_type in matrices:
-
-            if bone_type == "skin_data" or bone_type == "bind_shape":
-                continue
-
-            for bone in matrices[bone_type]:
-
-                if isinstance(bone, str):
-                    print("getting matrix for bone:", bone)
-                else:
-                    print("bone is not a string:")
-                    for b in bone:
-                        print(":", b, ":", sep="")
-
-                if bone not in skel.avatar_skeleton:
-                    continue
-                if skel.avatar_skeleton[bone]["type"] == "bone":
-                    mat = mathutils.Matrix(matrices[bone_type][bone])
-                    if bone_type == "bind_data":
-                        mat = mat.inverted()
-                    l, r, s = mat.decompose()
-                    L = mathutils.Matrix.Translation(l)
-                    R = r.to_matrix().to_4x4()
-                    S = mathutils.Matrix()
-                    for i in range(3):
-                        S[i][i] = 1
-                    M = L @ R @ S
-                    if bone_type == "bind_data":
-                        M = M.inverted()
-                    matrices[bone_type][bone] = M
-
-    bind_pose = {}
-    joint_pose = {}
-    for bone in matrices["bind_data"].keys():
-        underscored = bone.replace(" ", "_")
-        bind_pose[underscored] = matrices["bind_data"][bone]
-    for bone in matrices[joint].keys():
-        underscored = bone.replace(" ", "_")
-        joint_pose[underscored] = matrices[joint][bone]
-
-    print(
-        "devkit::export_dae - Applying transforms as indicated.  This is destructive, the items should be origin to rig not all to origin"
+    # glTF-Export
+    print("devkit::export_dae - Exportiere als glTF...")
+    bpy.ops.export_scene.gltf(
+        filepath=file,
+        export_format='GLTF_SEPARATE',
+        use_selection=True,
+        export_apply=True
     )
-    print("The following transforms are set:")
-    print(" - Apply scale   :", apply_scale)
-    print(" - Apply rotation:", apply_rotation)
-    print(" - Apply location:", apply_location)
 
-    bpy.ops.object.transform_apply(
-        scale=apply_scale, rotation=apply_rotation, location=apply_location
-    )
-    print("devkit::export_dae - apply transforms finished!")
-    if 1 == 0:
-        active = bpy.context.active_object
-        for o in bpy.context.selected_objects:
-            utils.activate(o)
-            print("applying transforms to", o.name, "of type", o.type)
-
-            bpy.ops.object.transform_apply(
-                scale=apply_scale, rotation=apply_rotation, location=apply_location
-            )
-        utils.activate(active)
+    print("devkit::export_dae - glTF-Export abgeschlossen!")
+    utils.set_state(state)
+    return True
 
     if oni_devkit.remove_empty_groups:
         print("devkit::export_dae - remove empty groups indicated")

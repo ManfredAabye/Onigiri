@@ -1,11 +1,11 @@
 bl_info = {
     "name": "Onigiri",
-    "author": "Nessaki, Originally writen by BinBash Resident (Second Life)",
-    "version": (5, 1, 3),
+    "author": "Nessaki, Mod Manfred Aabye, Originally writen by BinBash Resident (Second Life)",
+    "version": (5, 1, 5),
     "blender": (5, 0, 0),
     "description": "Quick Bento / Animesh prototype tool, includes an advanced Character Converter and animation system, Based on last open source version of GNU GPL v3 Bento Buddy",
-    "warning": "",
-    "doc_url": "",
+    "warning": "Onigiri 5 Alpha 2 - Use at your own risk, backup your files!",
+    "doc_url": "https://github.com/ManfredAabye/Onigiri",
     "category": "3D View",
     "location": "View3D > Tools > Onigiri",
 }
@@ -125,7 +125,7 @@ if 1 == 0:
     from .template_editor import *
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-source_url = "https://github.com/aiaustin/Onigiri"
+source_url = "https://github.com/ManfredAabye/Onigiri"
 
 presets_path = oni_settings["paths"]["presets"]
 data_path = oni_settings["paths"]["data"]
@@ -1696,13 +1696,31 @@ class OnigiriCharacterConverterLoadMap(bpy.types.Operator, ImportHelper):
             popup("This map file is not compatible with the process", "Error", "ERROR")
             return {"FINISHED"}
 
+
+        # Automatische Präfix-Erkennung
+        rig_bone_names = [b.name for b in armObj.data.bones]
+        def find_prefix(map_bones, rig_bones):
+            # Finde das längste gemeinsame Präfix aller Rig-Bones, die auf einen Map-Bone matchen könnten
+            for bone in map_bones:
+                matches = [rb for rb in rig_bones if rb.endswith(bone)]
+                if matches:
+                    # Nimm das Präfix vom ersten Match
+                    prefix = matches[0][:-len(bone)]
+                    return prefix
+            return ""
+
+        prefix = find_prefix(rename_map.keys(), rig_bone_names)
         rename = {}
         bad_bones = []
         for bone in rename_map:
-            if bone in armObj.data.bones:
-                rename[bone] = rename_map[bone]
+            rig_bone = bone
+            if prefix and (prefix + bone) in rig_bone_names:
+                rig_bone = prefix + bone
+            if rig_bone in rig_bone_names:
+                rename[rig_bone] = rename_map[bone]
             else:
                 bad_bones.append(bone)
+
         if len(rename) == 0:
             print(
                 "None of the bone maps in your map file matched the rig.  The following is a list of bones in the file..."
@@ -4191,10 +4209,9 @@ class OnigiriOnemapMapApplyPose(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-
-        if bpy.context.mode == "POSE":
+        # Button ist im POSE-Modus aktiv, wenn ein Armature ausgewählt ist
+        if bpy.context.mode != "POSE":
             return False
-        oni_onemap = bpy.context.scene.oni_onemap
         if len(bpy.context.selected_objects) == 0:
             return False
         if bpy.context.selected_objects[0].type != "ARMATURE":
@@ -13245,9 +13262,11 @@ class CharacterConverterApplyPose(bpy.types.Operator):
             armObj.pose.bones[bone].matrix_basis = mathutils.Matrix(poses_stored[bone])
             armObj.pose.bones[bone].rotation_mode = old_rotation_mode
 
+
         bpy.ops.pose.select_all(action="DESELECT")
         for bone in selected_pose_bones:
-            armObj.data.bones[bone].select = True
+            if bone in armObj.pose.bones:
+                armObj.pose.bones[bone].bone.select = True
         bpy.ops.object.mode_set(mode=old_mode)
 
         return {"FINISHED"}
