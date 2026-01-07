@@ -1075,21 +1075,23 @@ def set_state(state):
     if mode == "POSE":
         bpy.ops.object.mode_set(mode="POSE")
         for armObj in state["armatures"]:
-            for boneObj in armObj.data.bones:
-                boneObj.select = False
+            # Deselect all pose bones
+            for pb in armObj.pose.bones:
+                pb.select = False
         for boneObj in state["bones"]:
-            dBone = boneObj.bone
-            dBone.select = True
+            # Select only the relevant pose bones
+            if hasattr(boneObj, 'select'):
+                boneObj.select = True
     elif mode == "EDIT":
         bpy.ops.object.mode_set(mode="EDIT")
-
         if len(state["armatures"]) > 0:
             for armObj in state["armatures"]:
-                for boneObj in armObj.data.bones:
-                    boneObj.select = False
+                for eb in armObj.data.edit_bones:
+                    eb.select = False
             for boneObj in state["bones"]:
-                dBone = boneObj.bone
-                dBone.select = True
+                # In Edit-Mode ist boneObj ein EditBone
+                if hasattr(boneObj, 'select'):
+                    boneObj.select = True
     elif mode == "PAINT_WEIGHT":
 
         bpy.ops.object.mode_set(mode="WEIGHT_PAINT")

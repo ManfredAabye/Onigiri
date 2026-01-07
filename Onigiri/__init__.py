@@ -20303,6 +20303,152 @@ class OnigiriScaleAnimationOperator(bpy.types.Operator):
         return {"FINISHED"}
 
 
+
+
+
+
+
+# CharacterPoseConverter korrigiert die Haltung eines Characters für Second Life
+# Funktion 1: Verändert die Bein und Fußposition so das der Character eine korrekte T-Position einnimmt.
+# Funktion 2: Verändert die Finger beider Hände so das der Zeigefinger, Mittelfinger, Ringfinger und der kleine Finger gespreitzt sind.
+# Alle Funktionen müssen einzeln anwendbar sein.
+# Verwende immer die Blender 5 API und achte auf die korrekte Formatierung.
+# Füge das in den Arbeitsbereich ein:
+
+# region Arbeitsbereich CharacterPoseConverter anfang.
+# Blender 5 Operator: T-Pose Beine/Füße
+class CharacterPoseConverterTPoseLegsFeet(bpy.types.Operator):
+    """Setzt Beine und Füße in korrekte T-Pose für Second Life"""
+    bl_idname = "onigiri.character_pose_converter_tpose_legs_feet"
+    bl_label = "T-Pose Beine/Füße"
+
+    def execute(self, context):
+        arm = bpy.context.active_object
+        if not arm or arm.type != "ARMATURE":
+            self.report({'ERROR'}, "Bitte ein Armature-Objekt auswählen.")
+            return {'CANCELLED'}
+
+        # Nur in den Pose-Mode wechseln, wenn nötig
+        if bpy.context.object.mode != 'POSE':
+            bpy.ops.object.mode_set(mode='POSE')
+        pose_bones = arm.pose.bones
+        all_bone_names = [b.name for b in pose_bones]
+
+        tpose_rotations = {
+            'mHipLeft': (0, 0, -6),
+            'mHipRight': (0, 0, 6),
+            'mKneeLeft': (0, 0, 0),
+            'mKneeRight': (0, 0, 0),
+            'mAnkleLeft': (0, 0, 0),
+            'mAnkleRight': (0, 0, 0),
+            'mFootLeft': (0, 0, 0),
+            'mFootRight': (0, 0, 0),
+        }
+
+        import math
+        from mathutils import Euler
+
+        found_bones = []
+        for bone_name, rot in tpose_rotations.items():
+            pb = pose_bones.get(bone_name)
+            if pb:
+                pb.rotation_mode = 'XYZ'
+                pb.rotation_euler = Euler((math.radians(rot[0]), math.radians(rot[1]), math.radians(rot[2])), 'XYZ')
+                found_bones.append(bone_name)
+
+        if found_bones:
+            self.report({'INFO'}, f"T-Pose gesetzt für: {', '.join(found_bones)}. Alle Bones: {', '.join(all_bone_names)}")
+        else:
+            self.report({'WARNING'}, f"Keine passenden Bein/Fuß-Bones gefunden. Alle Bones: {', '.join(all_bone_names)}")
+        return {'FINISHED'}
+
+# Blender 5 Operator: Finger spreizen
+class CharacterPoseConverterSpreadFingers(bpy.types.Operator):
+    """Spreizt Zeige-, Mittel-, Ring- und kleinen Finger beider Hände"""
+    bl_idname = "onigiri.character_pose_converter_spread_fingers"
+    bl_label = "Finger spreizen (T-Pose)"
+
+    def execute(self, context):
+        arm = bpy.context.active_object
+        if not arm or arm.type != "ARMATURE":
+            self.report({'ERROR'}, "Bitte ein Armature-Objekt auswählen.")
+            return {'CANCELLED'}
+
+        # Nur in den Pose-Mode wechseln, wenn nötig
+        if bpy.context.object.mode != 'POSE':
+            bpy.ops.object.mode_set(mode='POSE')
+        pose_bones = arm.pose.bones
+        all_bone_names = [b.name for b in pose_bones]
+
+        import re
+        # Nur den ersten Bone jeder Fingerkette rotieren
+        patterns = [
+            r"(?:.*:)?LeftHand(Index|Middle|Ring|Pinky)1$", # Mixamo
+            r"(?:.*:)?RightHand(Index|Middle|Ring|Pinky)1$", # Mixamo
+            r"mFinger(Index|Middle|Ring|Small)1Left$", # SL/OS
+            r"mFinger(Index|Middle|Ring|Small)1Right$", # SL/OS
+            r"mHand(Index|Middle|Ring|Pinky)1Left$", # SL/OS/Avastar
+            r"mHand(Index|Middle|Ring|Pinky)1Right$", # SL/OS/Avastar
+            r"mHandThumb1Left$", # Daumen links
+            r"mHandThumb1Right$", # Daumen rechts
+        ]
+
+        spread_map = {
+            "Index": 10,
+            "Middle": 0,
+            "Ring": -10,
+            "Small": -20,
+            "Pinky": -20,
+            "Thumb": 15,
+        }
+
+        found_bones = []
+        import math
+        from mathutils import Euler
+        for bone in pose_bones:
+            for pat in patterns:
+                m = re.match(pat, bone.name)
+                if m:
+                    typ = m.group(1) if len(m.groups()) > 0 else "Thumb"
+                    # Richtung: Links/Rechts
+                    if "Left" in bone.name or "Left" in pat:
+                        rot_z = spread_map.get(typ, 0)
+                    elif "Right" in bone.name or "Right" in pat:
+                        rot_z = -spread_map.get(typ, 0)
+                    else:
+                        rot_z = 0
+                    bone.rotation_mode = 'XYZ'
+                    bone.rotation_euler = Euler((0, 0, math.radians(rot_z)), 'XYZ')
+                    found_bones.append(bone.name)
+                    break
+
+        if found_bones:
+            self.report({'INFO'}, f"Finger gespreizt (nur erste Bones) für: {', '.join(found_bones)}. Alle Bones: {', '.join(all_bone_names)}")
+        else:
+            self.report({'WARNING'}, f"Keine passenden Finger-Bones gefunden. Alle Bones: {', '.join(all_bone_names)}")
+        return {'FINISHED'}
+
+# Eigenständiges Panel für CharacterPoseConverter
+class CharacterPoseConverterPanel(bpy.types.Panel):
+    bl_idname = "OBJECT_PT_character_pose_converter"
+    bl_label = "Character Pose Converter"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Onigiri"
+    bl_options = {"DEFAULT_CLOSED"}
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("onigiri.character_pose_converter_tpose_legs_feet", text="T-Pose Beine/Füße")
+        layout.operator("onigiri.character_pose_converter_spread_fingers", text="Finger spreizen (T-Pose)")
+
+# endregion Arbeitsbereich CharacterPoseConverter ende.
+
+
+
+
+
+
 class OnigiriAnimationProperties(bpy.types.PropertyGroup):
 
     rebind_keep_animation: bpy.props.BoolProperty(
@@ -64305,6 +64451,9 @@ class OnigiriReloadMyImportantModules(bpy.types.Operator):
 
 classes = (
     OnigiriSlidersProperties,
+    CharacterPoseConverterTPoseLegsFeet,
+    CharacterPoseConverterSpreadFingers,
+    CharacterPoseConverterPanel,
     OnigiriSlidersApply,
     OnigiriSlidersResetAll,
     OnigiriSlidersResetSelected,
