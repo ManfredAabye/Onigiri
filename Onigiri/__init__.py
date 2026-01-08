@@ -1,10 +1,10 @@
 bl_info = {
     "name": "Onigiri",
     "author": "Nessaki, Mods Manfred Aabye, Originally writen by BinBash Resident (Second Life)",
-    "version": (5, 1, 6),
+    "version": (5, 0, 5),
     "blender": (5, 0, 0),
     "description": "Quick Bento / Animesh prototype tool, includes an advanced Character Converter and animation system, Based on last open source version of GNU GPL v3 Bento Buddy",
-    "warning": "Onigiri 5 Alpha 2 - Use at your own risk, backup your files!",
+    "warning": "Onigiri 5 Alpha 5 - Use at your own risk, backup your files!",
     "doc_url": "https://github.com/ManfredAabye/Onigiri",
     "category": "3D View",
     "location": "View3D > Tools > Onigiri",
@@ -14,17 +14,9 @@ print("NOTES:")
 print("-------")
 print("Onigiri A Japanese dish consisting of small balls or triangles of rice stuffed with a pickled or salted filling, and typically wrapped in dried seaweed.")
 print("-------")
-print(" * OnigiriCreateAnimationRig disabled until complete")
-print(" * snap_symmetry_enabled : False")
-print(" * OnigiriMotionHipCorrectionStart : Disabled")
-print(" * OnigiriMotionHipCorrectionEnd : Disabled")
-print(" * OnigiriMotionHipCorrectionReset : Disabled")
-print(" * OnigiriOnemapReverse : Not used yet, see OnigiriInheritReverseMap")
-print(" * Shape Importer deaktiviert, siehe (Body Shop)")
-print(" * Diese alte Klasse ist deaktiviert: CharacterConverterExpandMapper")
-print(" * Bulk Animation Export: export_mapped_animation benötigt Arbeit, nutze stattdessen export_retargeted_animation")
 print(" * glTF Import/Export ist jetzt Standard, Collada/DAE ist entfernt")
 
+# region Imports
 import re
 import os
 import bpy # type: ignore
@@ -43,6 +35,7 @@ import tempfile
 import mathutils # type: ignore
 import importlib
 import traceback
+from mathutils import Euler # type: ignore
 
 from collections import deque
 import xml.etree.ElementTree as ET
@@ -118,7 +111,9 @@ from . import ragdoll
 from . import shape
 from . import visible
 from . import sliders
+# endregion Imports
 
+# region Onigiri Constants
 if 1 == 0:
     reload_my_important_modules = [template_editor,]
     for m in reload_my_important_modules:
@@ -135,7 +130,9 @@ code_path = oni_settings["paths"]["code"]
 reset_file = oni_settings["files"]["reset"]
 bvh_template = oni_settings["files"]["bvh_template"]
 character_path = oni_settings["paths"]["characters"]
+# endregion Onigiri Constants
 
+# region Onigiri Handlers
 @persistent
 def clean_data(context):
 
@@ -972,8 +969,9 @@ def rebind(arm):
     bpy.ops.pose.armature_apply()
 
     return
+# endregion Onigiri Handlers
 
-
+# region Onigiri Sliders
 class OnigiriSlidersProperties(bpy.types.PropertyGroup):
 
     def update_sliders_blank(self, context):
@@ -1488,8 +1486,9 @@ class OnigiriSlidersAddSelected(bpy.types.Operator):
             }
 
         return {"FINISHED"}
+# endregion Onigiri Sliders
 
-
+# region Onigiri Rigs
 class OnigiriRigsUseConnect(bpy.types.Operator):
     """This unlocks bones so that you can move them, it also locks them back up
     to how they were before you unlocked them.  This cannot fix a damaged rig that
@@ -1536,8 +1535,9 @@ class OnigiriRigsUseConnect(bpy.types.Operator):
         utils.set_state(state)
 
         return {"FINISHED"}
+# endregion Onigiri Rigs
 
-
+# region Onigiri Character Converter
 class OnigiriCharacterConverterProperties(bpy.types.PropertyGroup):
 
     def update_blank(self, context):
@@ -2356,8 +2356,9 @@ class OnigiriCharacterConverterPanel(bpy.types.Panel):
             text="Export Mesh for SL / Opensim",
             icon_value = get_icon_id("second-life"),
         )
+# endregion Onigiri Character Converter
 
-
+# region Onigiri Rigs
 class OnigiriRigsMatchEditToView(bpy.types.Operator):
     """Match the edit bone view to the pose/data bone view.  To show or hide edit
     bones you need to toggle one of the switches above and then hit this button"""
@@ -2411,8 +2412,9 @@ class OnigiriRigsViewBones(bpy.types.Operator):
         else:
             print("Unknown action in (rigs_view_bones)")
         return {"FINISHED"}
+# endregion Onigiri Rigs
 
-
+# region Onigiri Onemap
 class OnigiriOnemapProperties(bpy.types.PropertyGroup):
 
     def update_onemap_blank(self, context):
@@ -2830,30 +2832,44 @@ class OnigiriOnemapReverse(bpy.types.Operator):
 
     def execute(self, context):
 
-        oni_inherit = bpy.context.window_manager.oni_inherit
-
-        mapObj = bpy.context.selected_objects[0]
-        rename_map = mapObj["oni_onemap_rename"].to_dict()
-        rename_rev = {}
-        for tbone in rename_map:
-            sbone = rename_map[tbone]
-            rename_rev[sbone] = tbone
-        mapObj["oni_onemap_rename"] = rename_rev
-        print("(onemap) : The rename map has been reversed")
-        txt = "Your retarget map has been reversed, that means that the source bone\n"
-        txt += "and the target bone names have been swapped in place.  This did not\n"
-        txt += "effect your rig at all.  To have the same change for your rig you can\n"
-        txt += (
-            "use the button next to this one (Convert Director to Actor) which will\n"
-        )
-        txt += "change the bone names in your rig.  This type of rig change can only\n"
-        txt += "happen if the source bones are named the same as the rig so you may\n"
-        txt += (
-            "have to undo your name changes in the map by hitting this button again\n"
-        )
-        txt += "in that case.\n"
-        utils.popup(txt, "Map bone names changed!", "INFO")
-        return {"FINISHED"}
+            try:
+                oni_inherit = getattr(bpy.context.window_manager, "oni_inherit", None)
+                mapObj = bpy.context.selected_objects[0]
+                rename_map_raw = mapObj.get("oni_onemap_rename", None)
+                if rename_map_raw is None:
+                    utils.popup("Kein Mapping gefunden.", "Fehler", "ERROR")
+                    return {"CANCELLED"}
+                # Versuche, in ein dict zu konvertieren
+                if hasattr(rename_map_raw, "to_dict"):
+                    rename_map = rename_map_raw.to_dict()
+                elif isinstance(rename_map_raw, dict):
+                    rename_map = rename_map_raw
+                else:
+                    utils.popup("Das Mapping ist kein Dictionary und kann nicht umgekehrt werden.", "Fehler", "ERROR")
+                    return {"CANCELLED"}
+                if not rename_map:
+                    utils.popup("Das Mapping ist leer.", "Fehler", "ERROR")
+                    return {"CANCELLED"}
+                # Prüfe auf Key-Kollisionen
+                collision = False
+                rename_rev = {}
+                for tbone, sbone in rename_map.items():
+                    if sbone in rename_rev:
+                        collision = True
+                    rename_rev[sbone] = tbone
+                if collision:
+                    utils.popup("Warnung: Beim Umkehren des Mappings gab es doppelte Zielnamen. Das Ergebnis könnte fehlerhaft sein.", "Warnung", "WARNING")
+                mapObj["oni_onemap_rename"] = rename_rev
+                print("(onemap) : The rename map has been reversed")
+                txt = "Deine Retarget-Map wurde umgekehrt. Die Quell- und Ziel-Knochen wurden getauscht.\n"
+                txt += "Das Rig selbst wurde nicht verändert.\n"
+                txt += "Um die Änderung auch auf das Rig anzuwenden, nutze (Convert Director to Actor).\n"
+                txt += "Falls die Knochen-Namen nicht passen, kannst du die Umkehrung erneut ausführen.\n"
+                utils.popup(txt, "Map bone names changed!", "INFO")
+                return {"FINISHED"}
+            except Exception as e:
+                utils.popup(f"Fehler beim Umkehren der Map: {e}", "Fehler", "ERROR")
+                return {"CANCELLED"}
 
 
 class OnigiriOneMapNukeSelected(bpy.types.Operator):
@@ -4540,8 +4556,9 @@ class OnigiriOnemapMapRemoveUnused(bpy.types.Operator):
             armObj["oni_onemap_pose"] = pose_map
 
         return {"FINISHED"}
+# endregion OneMap Operators
 
-
+# region Snap
 class OnigiriSnapProperties(bpy.types.PropertyGroup):
 
     def update_snap_blank(self, context):
@@ -4674,11 +4691,13 @@ class OnigiriSnapProperties(bpy.types.PropertyGroup):
                 snap.props["actor_symmetry_display"] = ""
 
     snap_symmetry_enabled: bpy.props.BoolProperty(
-        name="",
-        description="Enable Symmetry"
-        "\n\n"
-        "If you've chosen a pair for each rig then symmetry will be attempted.  This can fail and then you'll have to "
-        "manually do the other side but it should not fail often if it's a good rig.",
+        name="Symmetrie aktivieren",
+        description=(
+            "Aktiviert die automatische Spiegelung von Knochenpaaren.\n\n"
+            "Wenn für jedes Rig ein Paar gewählt wurde, wird die Symmetrie versucht.\n"
+            "Bei fehlerhaften Rigs kann die automatische Spiegelung fehlschlagen.\n"
+            "In diesem Fall bitte die andere Seite manuell bearbeiten."
+        ),
         default=False,
     )
 
@@ -5042,8 +5061,9 @@ class OnigiriSnapViewMappedBones(bpy.types.Operator):
                 outRig.data.bones[tbone].hide = state
 
         return {"FINISHED"}
+# endregion Snap Operators
 
-
+# region OneMap
 class OnigiriOnemapViewActorBones(bpy.types.Operator):
     """Show all bones or restore the bone view of the target system (Actor) rig, if present"""
 
@@ -5106,8 +5126,9 @@ class OnigiriOnemapViewDirectorBones(bpy.types.Operator):
         print("Done!")
 
         return {"FINISHED"}
+# endregion OneMap Operators
 
-
+# region Snap
 class OnigiriSnapMapCollect(bpy.types.Operator):
     """This will map the selected bones to the recorded Director and walk down the hierarchy depositing
     them until there are no more selected bones left.  This may work in production but I put it here for
@@ -7188,8 +7209,9 @@ class OnigiriSnapExportMesh(bpy.types.Operator, ExportHelper):
             utils.set_state(state)
 
         return {"FINISHED"}
+# endregion Snap
 
-
+# region Edit
 class OnigiriEditTemplateProperties(bpy.types.PropertyGroup):
 
     editor_manual_menu_enabled: bpy.props.BoolProperty(
@@ -10508,8 +10530,9 @@ class OnigiriEditTemplateSaveFromCCM(bpy.types.Operator, ExportHelper):
             )
 
         return {"FINISHED"}
+# endregion Edit
 
-
+# region Shape
 class OnigiriShapeProperties(bpy.types.PropertyGroup):
 
     def update_shape_blank(self, context):
@@ -10779,8 +10802,9 @@ class OnigiriShapeRemove(bpy.types.Operator):
         print("would have removed")
 
         return {"FINISHED"}
+# endregion Shape
 
-
+# region Controller
 class OnigiriControllerProperties(bpy.types.PropertyGroup):
 
     controller_menu_enabled: bpy.props.BoolProperty(
@@ -11545,7 +11569,7 @@ class OnigiriControllerTemplateLoad(bpy.types.Operator, ImportHelper):
         oni_controller.controller_template_name = file_prefix
 
         return {"FINISHED"}
-
+# endregion Controller
 
 class OnigiriDynamicProperties(bpy.types.PropertyGroup):
 
@@ -13438,6 +13462,12 @@ class CharacterConverterEditPose(bpy.types.Operator):
 
 class CharacterConverterLibProperties(bpy.types.PropertyGroup):
 
+    pose_enable_library: bpy.props.BoolProperty(
+        name="Pose-Bibliothek aktivieren",
+        description="Aktiviert die Pose-Bibliothek",
+        default=False
+    )
+
 
     def execute(self, context):
         try:
@@ -14433,152 +14463,152 @@ class CharacterConverterCheckRigs(bpy.types.Operator):
         pass
         return {"FINISHED"}
 
+# # Diese funktion ist ein Platzhalter, um den Blender-Bug zu umgehen
+# class CharacterConverterExpandMapper(bpy.types.Operator):
+#     """Watch here for messages
 
-class CharacterConverterExpandMapper(bpy.types.Operator):
-    """Watch here for messages
+#     This button does nothing.  It's to hop over a Blender bug"""
 
-    This button does nothing.  It's to hop over a Blender bug"""
+#     bl_idname = "onigiri.enable_retargeting"
+#     bl_label = "Enable bone retargeting properties"
 
-    bl_idname = "onigiri.enable_retargeting"
-    bl_label = "Enable bone retargeting properties"
+#     @classmethod
+#     def poll(cls, context):
+#         ccp = bpy.context.window_manager.cc_props
+#         obj = bpy.data.objects
 
-    @classmethod
-    def poll(cls, context):
-        ccp = bpy.context.window_manager.cc_props
-        obj = bpy.data.objects
+#         if ccp.save_ready != "":
+#             if ccp.edit_mode:
+#                 ccp.enable_retargeting_label = "Remove map bones"
+#                 return {"FINISHED"}
 
-        if ccp.save_ready != "":
-            if ccp.edit_mode:
-                ccp.enable_retargeting_label = "Remove map bones"
-                return {"FINISHED"}
+#         if ccp.source_rig_name not in obj or ccp.target_rig_name not in obj:
 
-        if ccp.source_rig_name not in obj or ccp.target_rig_name not in obj:
+#             ccp.backup_source_rig_name = ccp.source_rig_name
 
-            ccp.backup_source_rig_name = ccp.source_rig_name
+#             ccp.backup_target_rig_name = ccp.target_rig_name
 
-            ccp.backup_target_rig_name = ccp.target_rig_name
+#             oni_settings["terminate"] = True
+#             ccp.record_source_rig = False
 
-            oni_settings["terminate"] = True
-            ccp.record_source_rig = False
+#             oni_settings["terminate"] = True
+#             ccp.source_rig_name = ""
 
-            oni_settings["terminate"] = True
-            ccp.source_rig_name = ""
+#             oni_settings["terminate"] = True
+#             ccp.record_target_rig = False
 
-            oni_settings["terminate"] = True
-            ccp.record_target_rig = False
+#             oni_settings["terminate"] = True
+#             ccp.target_rig_name = ""
 
-            oni_settings["terminate"] = True
-            ccp.target_rig_name = ""
+#             ccp.enable_retargeting_label = ""
 
-            ccp.enable_retargeting_label = ""
+#             if bpy.context.mode != "OBJECT" and len(bpy.context.selected_objects) == 1:
+#                 bpy.ops.object.mode_set(mode="OBJECT")
+#             oni_settings["terminate"] = True
+#             ccp.enable_retargeting = False
+#             ccp.set_rename_parent = ""
+#             ccp.set_reskin_children = ""
+#             ccp.set_rename_target = ""
 
-            if bpy.context.mode != "OBJECT" and len(bpy.context.selected_objects) == 1:
-                bpy.ops.object.mode_set(mode="OBJECT")
-            oni_settings["terminate"] = True
-            ccp.enable_retargeting = False
-            ccp.set_rename_parent = ""
-            ccp.set_reskin_children = ""
-            ccp.set_rename_target = ""
+#             return False
 
-            return False
+#         mode = context.mode
+#         if mode != "POSE":
+#             ccp.enable_retargeting_label = "Must be in Pose Mode"
+#             return True
+#         if len(bpy.context.selected_pose_bones) == 0 and ccp.set_rename_parent == "":
+#             ccp.enable_retargeting_label = "Select a bone to rename"
+#             return True
+#         if len(bpy.context.selected_pose_bones) > 1 and ccp.set_rename_parent == "":
 
-        mode = context.mode
-        if mode != "POSE":
-            ccp.enable_retargeting_label = "Must be in Pose Mode"
-            return True
-        if len(bpy.context.selected_pose_bones) == 0 and ccp.set_rename_parent == "":
-            ccp.enable_retargeting_label = "Select a bone to rename"
-            return True
-        if len(bpy.context.selected_pose_bones) > 1 and ccp.set_rename_parent == "":
+#             if ccp.set_rename_parent == "":
+#                 ccp.enable_retargeting_label = "Select only 1 bone for now"
+#             return True
 
-            if ccp.set_rename_parent == "":
-                ccp.enable_retargeting_label = "Select only 1 bone for now"
-            return True
+#         if (
+#             len(bpy.context.selected_pose_bones) > 0
+#             and ccp.set_rename_parent != ""
+#             and ccp.set_reskin_children == ""
+#         ):
+#             ccp.enable_retargeting_label = "Click the (Set Reskin) button"
+#             return True
 
-        if (
-            len(bpy.context.selected_pose_bones) > 0
-            and ccp.set_rename_parent != ""
-            and ccp.set_reskin_children == ""
-        ):
-            ccp.enable_retargeting_label = "Click the (Set Reskin) button"
-            return True
+#         if ccp.set_rename_parent != "" and ccp.set_reskin_children == "":
+#             ccp.enable_retargeting_label = "Select 0 or more child bones"
+#             return True
 
-        if ccp.set_rename_parent != "" and ccp.set_reskin_children == "":
-            ccp.enable_retargeting_label = "Select 0 or more child bones"
-            return True
+#         if (
+#             ccp.set_rename_parent != ""
+#             and ccp.set_reskin_children != ""
+#             and ccp.set_rename_target != ""
+#         ):
+#             ccp.enable_retargeting_label = "Click here to accept"
+#             return True
 
-        if (
-            ccp.set_rename_parent != ""
-            and ccp.set_reskin_children != ""
-            and ccp.set_rename_target != ""
-        ):
-            ccp.enable_retargeting_label = "Click here to accept"
-            return True
+#         if (
+#             ccp.set_rename_parent != ""
+#             and ccp.set_reskin_children != ""
+#             and ccp.set_rename_target == ""
+#         ):
+#             if len(bpy.context.selected_pose_bones) > 1:
+#                 ccp.enable_retargeting_label = "Select only one target bone"
 
-        if (
-            ccp.set_rename_parent != ""
-            and ccp.set_reskin_children != ""
-            and ccp.set_rename_target == ""
-        ):
-            if len(bpy.context.selected_pose_bones) > 1:
-                ccp.enable_retargeting_label = "Select only one target bone"
+#             elif len(bpy.context.selected_pose_bones) == 1:
+#                 ccp.enable_retargeting_label = "Click the (Set Target) button"
+#             else:
+#                 ccp.enable_retargeting_label = "Select a target bone"
+#             return True
 
-            elif len(bpy.context.selected_pose_bones) == 1:
-                ccp.enable_retargeting_label = "Click the (Set Target) button"
-            else:
-                ccp.enable_retargeting_label = "Select a target bone"
-            return True
+#         ccp.enable_retargeting_label = "Click the (Set Rename) button"
+#         return True
 
-        ccp.enable_retargeting_label = "Click the (Set Rename) button"
-        return True
+#     def execute(self, context):
 
-    def execute(self, context):
+#         ccp = bpy.context.window_manager.cc_props
+#         obj = bpy.data.objects
 
-        ccp = bpy.context.window_manager.cc_props
-        obj = bpy.data.objects
+#         if (
+#             ccp.set_rename_parent != ""
+#             and ccp.set_reskin_children != ""
+#             and ccp.set_rename_target != ""
+#         ):
 
-        if (
-            ccp.set_rename_parent != ""
-            and ccp.set_reskin_children != ""
-            and ccp.set_rename_target != ""
-        ):
+#             ccp["remap_stored"]["rename"].update(
+#                 {ccp.set_rename_parent: ccp.set_rename_target}
+#             )
 
-            ccp["remap_stored"]["rename"].update(
-                {ccp.set_rename_parent: ccp.set_rename_target}
-            )
+#             reskin_children = ccp["reskin_mapper"].to_dict()
 
-            reskin_children = ccp["reskin_mapper"].to_dict()
+#             remap_stored = ccp["remap_stored"].to_dict()
 
-            remap_stored = ccp["remap_stored"].to_dict()
+#             if len(reskin_children[ccp.set_rename_parent]) > 0:
+#                 ccp["remap_stored"]["reskin"].update(
+#                     {ccp.set_rename_parent: reskin_children[ccp.set_rename_parent]}
+#                 )
 
-            if len(reskin_children[ccp.set_rename_parent]) > 0:
-                ccp["remap_stored"]["reskin"].update(
-                    {ccp.set_rename_parent: reskin_children[ccp.set_rename_parent]}
-                )
+#             ccp.save_ready = "Save map to file"
 
-            ccp.save_ready = "Save map to file"
+#             bpy.ops.object.mode_set(mode="OBJECT")
+#             bpy.ops.object.select_all(action="DESELECT")
 
-            bpy.ops.object.mode_set(mode="OBJECT")
-            bpy.ops.object.select_all(action="DESELECT")
+#             obj[ccp.source_rig_name].hide_select = False
+#             obj[ccp.source_rig_name].select_set(True)
+#             bpy.context.view_layer.objects.active = obj[ccp.source_rig_name]
+#             bpy.ops.object.mode_set(mode="POSE")
 
-            obj[ccp.source_rig_name].hide_select = False
-            obj[ccp.source_rig_name].select_set(True)
-            bpy.context.view_layer.objects.active = obj[ccp.source_rig_name]
-            bpy.ops.object.mode_set(mode="POSE")
+#             ccp.set_rename_parent = ""
+#             ccp.set_reskin_children = ""
+#             ccp.set_rename_target = ""
 
-            ccp.set_rename_parent = ""
-            ccp.set_reskin_children = ""
-            ccp.set_rename_target = ""
+#             ccp.last_anchor = ""
 
-            ccp.last_anchor = ""
+#             ccp["reskin_mapper"] = dict()
 
-            ccp["reskin_mapper"] = dict()
+#             ccp.reset_mapper = ""
 
-            ccp.reset_mapper = ""
+#             return {"FINISHED"}
 
-            return {"FINISHED"}
-
-        return {"FINISHED"}
+#         return {"FINISHED"}
 
 
 class CharacterConverterSetRename(bpy.types.Operator):
@@ -20316,6 +20346,70 @@ class OnigiriScaleAnimationOperator(bpy.types.Operator):
 # Füge das in den Arbeitsbereich ein:
 
 # region Arbeitsbereich CharacterPoseConverter anfang.
+# Blender 5 Operator: Keyframe auf alle Finger-Bones setzen
+class CharacterPoseConverterKeyframeFingers(bpy.types.Operator):
+    """Setzt einen Keyframe (Rotation) auf alle Finger-Bones im aktuellen Frame"""
+    bl_idname = "onigiri.character_pose_converter_keyframe_fingers"
+    bl_label = "Keyframe auf Finger-Bones"
+
+    def execute(self, context):
+        import re
+        arm = bpy.context.active_object
+        if not arm or arm.type != "ARMATURE" or bpy.context.mode != 'POSE':
+            self.report({'ERROR'}, "Bitte ein Armature-Objekt im Pose-Modus auswählen.")
+            return {'CANCELLED'}
+
+        # Typische Finger-Benennungen für SL/OS, Mixamo, Avastar
+        finger_patterns = [
+            r"finger|hand|thumb|index|middle|ring|pinky|little|mFinger|lFinger|rFinger|f_?thumb|f_?index|f_?middle|f_?ring|f_?pinky|f_?little",
+        ]
+        finger_bones = []
+        for bone in arm.pose.bones:
+            name = bone.name.lower()
+            if any(re.search(pat, name) for pat in finger_patterns):
+                finger_bones.append(bone)
+
+        if not finger_bones:
+            self.report({'ERROR'}, "Keine passenden Finger-Bones gefunden.")
+            return {'CANCELLED'}
+
+        for bone in finger_bones:
+            bone.keyframe_insert(data_path="rotation_quaternion")
+            bone.keyframe_insert(data_path="rotation_euler")
+
+        self.report({'INFO'}, f"Keyframes auf {len(finger_bones)} Finger-Bones gesetzt.")
+        return {'FINISHED'}
+        arm = bpy.context.active_object
+        if not arm or arm.type != "ARMATURE":
+            self.report({'ERROR'}, "Bitte ein Armature-Objekt auswählen.")
+            return {'CANCELLED'}
+        if bpy.context.object.mode != 'POSE':
+            bpy.ops.object.mode_set(mode='POSE')
+        pose_bones = arm.pose.bones
+        import re
+        patterns = [
+            r"(?:.*:)?LeftHand(Index|Middle|Ring|Pinky)\\d$",
+            r"(?:.*:)?RightHand(Index|Middle|Ring|Pinky)\\d$",
+            r"mFinger(Index|Middle|Ring|Small)\\dLeft$",
+            r"mFinger(Index|Middle|Ring|Small)\\dRight$",
+            r"mHand(Index|Middle|Ring|Pinky)\\dLeft$",
+            r"mHand(Index|Middle|Ring|Pinky)\\dRight$",
+            r"mHandThumb\\dLeft$",
+            r"mHandThumb\\dRight$",
+        ]
+        found_bones = []
+        for bone in pose_bones:
+            for pat in patterns:
+                if re.match(pat, bone.name):
+                    bone.keyframe_insert(data_path="rotation_euler")
+                    found_bones.append(bone.name)
+                    break
+        if found_bones:
+            self.report({'INFO'}, f"Keyframes gesetzt für: {', '.join(found_bones)}")
+        else:
+            self.report({'WARNING'}, "Keine passenden Finger-Bones gefunden.")
+        return {'FINISHED'}
+
 # Blender 5 Operator: T-Pose Beine/Füße
 class CharacterPoseConverterTPoseLegsFeet(bpy.types.Operator):
     """Setzt Beine und Füße in korrekte T-Pose für Second Life"""
@@ -20344,9 +20438,6 @@ class CharacterPoseConverterTPoseLegsFeet(bpy.types.Operator):
             'mFootLeft': (0, 0, 0),
             'mFootRight': (0, 0, 0),
         }
-
-        import math
-        from mathutils import Euler
 
         found_bones = []
         for bone_name, rot in tpose_rotations.items():
@@ -20403,8 +20494,7 @@ class CharacterPoseConverterSpreadFingers(bpy.types.Operator):
         }
 
         found_bones = []
-        import math
-        from mathutils import Euler
+
         for bone in pose_bones:
             for pat in patterns:
                 m = re.match(pat, bone.name)
@@ -20441,6 +20531,7 @@ class CharacterPoseConverterPanel(bpy.types.Panel):
         layout = self.layout
         layout.operator("onigiri.character_pose_converter_tpose_legs_feet", text="T-Pose Beine/Füße")
         layout.operator("onigiri.character_pose_converter_spread_fingers", text="Finger spreizen (T-Pose)")
+        layout.operator("onigiri.character_pose_converter_keyframe_fingers", text="Keyframe auf Finger-Bones")
 
 # endregion Arbeitsbereich CharacterPoseConverter ende.
 
@@ -31773,25 +31864,8 @@ class OnigiriExportSLAnimOld(bpy.types.Operator, ExportHelper):
 
         bpy.app.timers.register(cleanup)
 
-        if not oni.export_onigiri_disabled:
-            if armObj.get("onigiri") is None:
-                print(
-                    "1 Onigiri rig check is enabled but the rig is not Onigiri.  Disable the check in (Extended Options) to override."
-                )
-                txt = "\n"
-                txt += "\n"
-                txt += "\n"
-                txt += "\n"
-                txt += "Onigiri rig checking prevents export.  You can disable this feature or    \n"
-                txt += "choose a Onigiri rig that's desiged for animation export.                 \n"
-                txt += "\n"
-                txt += "\n"
-                txt += "\n"
-                txt += "\n"
-                txt += "\n"
 
-                utils.popup(txt, "Info", "INFO")
-                return {"FINISHED"}
+        # Onigiri-Rig-Prüfung entfernt: Export ist jetzt immer möglich
 
         if not oni.export_sl_limitations_check_disabled:
 
@@ -33065,32 +33139,58 @@ class OnigiriForceRigToClass(bpy.types.Operator):
         return {"FINISHED"}
 
 
+
 class OnigiriCreateAnimationRig(bpy.types.Operator):
-    """This rig has joint positions intended for animating the classic default
-    avatar in Second Life.  Many early animations were based on this and may give
-    you the synchronicity you need.  This is not compete yet, it's just a rig"""
+    """
+    Erstellt ein robustes Animation Rig für Second Life Animationen.
+    Das Rig basiert auf der Onigiri-Standardstruktur und ist für Animationen optimiert.
+    Fehler werden abgefangen und dem Nutzer gemeldet.
+    """
 
     bl_idname = "onigiri.create_animation_rig"
     bl_label = "Create an SL animation rig"
 
-
     def execute(self, context):
-        oni = bpy.context.scene.onigiri
-        obj = bpy.data.objects
-        # Erstelle das Animation Rig direkt (ohne Deaktivierung)
-        armObj = rigutils.create_rig(target="animation")
-        if not armObj:
-            print("OnigiriCreateAnimationRig: Fehler beim Erstellen des Animation Rigs")
-            popup("Fehler beim Erstellen des Animation Rigs", "Fehler", "ERROR")
-            return {"CANCELLED"}
-        else:
+        try:
+            oni = getattr(bpy.context.scene, "onigiri", None)
+            if oni is None:
+                self.report({'ERROR'}, "Onigiri: Szene-Property 'onigiri' nicht gefunden.")
+                return {'CANCELLED'}
+
+            # Erstelle das Animation Rig (nutze robusten Fallback auf 'default', falls 'animation' nicht existiert)
+            try:
+                armObj = rigutils.create_rig(target="animation")
+            except Exception as e:
+                print(f"OnigiriCreateAnimationRig: Fehler bei create_rig(animation): {e}")
+                armObj = None
+
+            if not armObj:
+                try:
+                    armObj = rigutils.create_rig(target="default")
+                    self.report({'WARNING'}, "Animation-Rig nicht gefunden, Standard-Rig wurde erstellt.")
+                except Exception as e:
+                    print(f"OnigiriCreateAnimationRig: Fehler bei create_rig(default): {e}")
+                    self.report({'ERROR'}, f"Fehler beim Erstellen des Animation Rigs: {e}")
+                    return {'CANCELLED'}
+
+            # Prüfe, ob das Objekt korrekt erstellt wurde
+            if not armObj or not hasattr(armObj, 'data') or not hasattr(armObj.data, 'bones') or len(armObj.data.bones) == 0:
+                self.report({'ERROR'}, "Animation Rig konnte nicht korrekt erstellt werden.")
+                return {'CANCELLED'}
+
+            # Metadaten setzen
             armObj["onigiri"] = bl_info["version"]
             armObj["rig_class"] = "animation"
             armObj["class_name"] = "animation"
             bpy.context.view_layer.objects.active = armObj
             armObj.select_set(True)
+            self.report({'INFO'}, f"Animation Rig erfolgreich erstellt: {armObj.name}")
             print("Animation Rig erfolgreich erstellt:", armObj.name)
-        return {"FINISHED"}
+            return {'FINISHED'}
+        except Exception as e:
+            print(f"OnigiriCreateAnimationRig: Unerwarteter Fehler: {e}")
+            self.report({'ERROR'}, f"Unerwarteter Fehler: {e}")
+            return {'CANCELLED'}
 
 
 class OnigiriCreateOldRig(bpy.types.Operator):
@@ -37122,17 +37222,19 @@ class OnigiriAnimationLibrarySave(bpy.types.Operator, ExportHelper):
 
     def execute(self, context):
 
+
         oni_alib = bpy.context.scene.oni_alib
-
-        formatted_text = str(oni_alib["motion"].to_dict())
-
-        anim_file = self.properties.filepath
-        output = open(anim_file, "w", encoding="UTF8")
-        output.write("motion = ")
-        output.write(formatted_text)
-        output.close()
-
-        return {"FINISHED"}
+        if "motion" in oni_alib:
+            formatted_text = str(oni_alib["motion"].to_dict())
+            anim_file = self.properties.filepath
+            output = open(anim_file, "w", encoding="UTF8")
+            output.write("motion = ")
+            output.write(formatted_text)
+            output.close()
+            return {"FINISHED"}
+        else:
+            self.report({'ERROR'}, 'Keine Animation ("motion") im Library gefunden!')
+            return {'CANCELLED'}
 
 
 class OnigiriAnimationLibraryLoad(bpy.types.Operator, ImportHelper):
@@ -41534,27 +41636,7 @@ class OnigiriExportBVHSL(bpy.types.Operator, ExportHelper):
         oni = bpy.context.scene.onigiri
         onia = bpy.context.scene.oni_anim_props
         armObj = bpy.context.selected_objects[0]
-
-        if not oni.export_onigiri_disabled:
-            if armObj.get("onigiri") is None:
-                print(
-                    "2 Onigiri rig check is enabled but the rig is not Onigiri.  Disable the check in (Extended Options) to override."
-                )
-                txt = "\n"
-                txt += "\n"
-                txt += "\n"
-                txt += "\n"
-                txt += "Onigiri rig checking prevents export.  You can disable this feature or    \n"
-                txt += "choose a Onigiri rig that's desiged for animation export.                 \n"
-                txt += "\n"
-                txt += "\n"
-                txt += "\n"
-                txt += "\n"
-                txt += "\n"
-
-                utils.popup(txt, "Info", "INFO")
-
-                return {"FINISHED"}
+            # Onigiri-Rig-Prüfung entfernt: Export ist jetzt unabhängig vom Rig-Typ möglich
 
         if not oni.export_sl_limitations_check_disabled:
             if oni.animation_time > 60.0:
@@ -51719,12 +51801,13 @@ class OnigiriMotionCycleRig(bpy.types.Operator):
 
 
 class OnigiriMotionHipCorrectionStart(bpy.types.Operator):
-    """This frame is the frame where your character/rig/animation looks correct,
-    it is where you would like your avatar to be instead of the broken frame, which
-    you will pick next.  This adjusts location/translation"""
-
+    """
+    Setzt den Start-/Referenz-Frame für die Hüftkorrektur.\n\n
+    Wähle den Frame, in dem dein Charakter korrekt steht.\n
+    Dieser Frame dient als Referenz für die spätere Korrektur.
+    """
     bl_idname = "onigiri.motion_hip_correction_start"
-    bl_label = "Reference frame"
+    bl_label = "Hüftkorrektur: Referenz setzen"
 
     @classmethod
     def poll(cls, context):
@@ -51763,12 +51846,13 @@ class OnigiriMotionHipCorrectionStart(bpy.types.Operator):
 
 
 class OnigiriMotionHipCorrectionEnd(bpy.types.Operator):
-    """After choosing the good frame you'll move the time slider to the spot where
-    your avtar looks wrong.  This and all key frames after, will be position corrected
-    to bring your animation into the area of the first/good frame"""
-
+    """
+    Setzt den Ziel-Frame für die Hüftkorrektur.\n\n
+    Wähle den Frame, in dem dein Charakter falsch steht.\n
+    Alle Keyframes ab diesem Punkt werden an die Referenz angepasst.
+    """
     bl_idname = "onigiri.motion_hip_correction_end"
-    bl_label = "Bad Frame"
+    bl_label = "Hüftkorrektur: Ziel setzen"
 
     @classmethod
     def poll(cls, context):
@@ -51808,12 +51892,12 @@ class OnigiriMotionHipCorrectionEnd(bpy.types.Operator):
 
 
 class OnigiriMotionHipCorrectionReset(bpy.types.Operator):
-    """Reset to start.  Choosing a different rig and setting a start/reference
-    frame will reset the hip corrector to the new rig and frame.  This button will
-    clear it out without doing that to start new"""
-
+    """
+    Setzt die Hüftkorrektur zurück.\n\n
+    Alle gespeicherten Korrektur-Frames werden entfernt und die Funktion kann neu gestartet werden.
+    """
     bl_idname = "onigiri.motion_hip_correction_reset"
-    bl_label = "Reset"
+    bl_label = "Hüftkorrektur: Zurücksetzen"
 
 
     def execute(self, context):
@@ -64451,6 +64535,7 @@ class OnigiriReloadMyImportantModules(bpy.types.Operator):
 
 classes = (
     OnigiriSlidersProperties,
+    CharacterPoseConverterKeyframeFingers,
     CharacterPoseConverterTPoseLegsFeet,
     CharacterPoseConverterSpreadFingers,
     CharacterPoseConverterPanel,
@@ -64546,6 +64631,9 @@ classes = (
     OnigiriAttachProxyRig,
     OnigiriCreateDevkitRig,
     OnigiriCreateAnimationRig,
+    OnigiriMotionHipCorrectionStart,
+    OnigiriMotionHipCorrectionEnd,
+    OnigiriMotionHipCorrectionReset,
     OnigiriCreateOldRig,
     OnigiriCreateSLRig,
     OnigiriCreateSLPosRig,

@@ -23,17 +23,14 @@ class OnigiriSlidersProperties(bpy.types.PropertyGroup):
 			sliders.restore_rig()
 
 	sliders_menu_enabled: bpy.props.BoolProperty = bpy.props.BoolProperty(
-		name="",
-		description="NOTE: For efficiency sake, disable this menu item when not in use!"
-		"\n\n"
-		"WARNING: Only use this with rigs and associated content that has not been scaled, i.e. your own custom content only. "
-		"There is no other reason to use this tool except for your content that is not transformed.  If you do not honor this "
-		"warning you may very well damage your product."
-		"\n\n"
-		"This is a slider system for use with correcting weight problems but you can also use it as a character "
-		"shaper if you're careful.  If you're freezing the mesh your bone properties will be returned to their "
-		"natural state, the sliders neutralized, and you can start a new round of shaping.  Note that it's always "
-		"best to do your major work on the mesh itself and only use this for tweaking and/or deformation testing",
+		name="Shape Importer aktivieren",
+		description=(
+			"Aktiviert den Shape Importer (Body Shop).\n\n"
+			"Mit diesem Tool kannst du Gewichtsprobleme korrigieren oder dein Mesh als Shape shapen.\n"
+			"Achtung: Nur für eigene, nicht skalierte Rigs verwenden!\n"
+			"Beim Freezen werden die Knochen-Eigenschaften zurückgesetzt und du kannst neu starten.\n"
+			"Größere Änderungen sollten immer direkt am Mesh erfolgen."
+		),
 		default=False,
 		update=sliders_menu_enabled,
 	)

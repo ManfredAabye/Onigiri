@@ -802,45 +802,49 @@ def export_sl_anim(armature=None, path=None):
     print("Generating an ordered bone list with SL bones only")
     bone_list = []
 
-    if export_mapped_animation:
-        print("Mapped animation export requested...")
-        rename_map = armObj.get("oni_onemap_rename")
-        if rename_map is None:
-            print("No rename_map on rig, processing normally")
-        else:
-            print("Found rename_map, translating...")
-            bone_data_temp = {}
-            for sbone in rename_map.keys():
-                tbone = rename_map[sbone]
-                print("Processing sbone / tbone:", sbone, "/", tbone)
-                if sbone in bone_data:
-                    bone_data_temp[tbone] = bone_data[sbone]
-            if len(bone_data_temp) == 0:
-                print(
-                    "There was a map but no bones were able to be translated, the resulting dictionary was len 0"
-                )
-                return False
-            bone_data = bone_data_temp
 
-        popup("Mapped Animation erfolgreich exportiert.", "Export", "INFO")
-        print("Generating an ordered bone list from a mapped animation")
+    if export_mapped_animation:
+        print("[Onigiri] Mapped animation export requested...")
+        rename_map = armObj.get("oni_onemap_rename")
+        if not rename_map or not isinstance(rename_map, dict):
+            msg = "Kein gültiges Mapping (oni_onemap_rename) am Rig gefunden. Export abgebrochen."
+            print("[Onigiri]", msg)
+            utils.popup(msg, "Fehler", "ERROR")
+            return False
+
+        print("[Onigiri] Found rename_map, begin translation...")
+        bone_data_temp = {}
+        for sbone, tbone in rename_map.items():
+            print(f"[Onigiri] Mapping: {sbone} → {tbone}")
+            if sbone in bone_data:
+                bone_data_temp[tbone] = bone_data[sbone]
+        if not bone_data_temp:
+            msg = "Mapping vorhanden, aber keine Bones konnten übersetzt werden. Export abgebrochen."
+            print("[Onigiri]", msg)
+            utils.popup(msg, "Fehler", "ERROR")
+            return False
+        bone_data = bone_data_temp
+
+        bone_list = []
         for boneObj in armObj.data.bones:
             bone = boneObj.name
             if bone in rename_map:
-                    tbone = rename_map[bone]
+                tbone = rename_map[bone]
+                if tbone not in bone_data:
+                    print(f"[Onigiri] Ziel-Bone {tbone} nicht in bone_data, übersprungen.")
+                    continue
+                if tbone not in skel.avatar_skeleton:
+                    print(f"[Onigiri] Ziel-Bone {tbone} nicht im Avatar-Skelett, übersprungen.")
+                    continue
+                bone_list.append(tbone)
+        if not bone_list:
+            msg = "Export mapped animation fehlgeschlagen: Keine gültigen Bones gefunden."
+            print("[Onigiri]", msg)
+            utils.popup(msg, "Fehler", "ERROR")
+            return False
 
-                    if tbone not in bone_data:
-                        print("Missing tbone in bone_data, that's fine:", tbone)
-                        continue
-                    if tbone not in skel.avatar_skeleton:
-                        print("missing tbone in skel file, this is NOT ok:", tbone)
-                        continue
-                    bone_list.append(tbone)
-            if len(bone_list) == 0:
-                print("Export mapped animation failed with empty list")
-                return False
-
-            print("Writing mapped animation...")
+        print("[Onigiri] Writing mapped animation...")
+        try:
             result = write_mapped_animation(
                 armature=armObj.name,
                 bone_data=bone_data,
@@ -852,21 +856,31 @@ def export_sl_anim(armature=None, path=None):
                 loop_out_point=loop_out_point,
                 path=path,
             )
+        except Exception as e:
+            msg = f"Fehler beim Schreiben der Mapped Animation: {e}"
+            print("[Onigiri]", msg)
+            utils.popup(msg, "Fehler", "ERROR")
+            return False
 
-            if not result:
-                txt = "animutils::export_sl_anim: ERROR - write_mapped_animation returned false!"
-                return False
+        if not result:
+            msg = "Export mapped animation fehlgeschlagen: write_mapped_animation lieferte False."
+            print("[Onigiri]", msg)
+            utils.popup(msg, "Fehler", "ERROR")
+            return False
 
-            if test_proxy:
-                print("test_proxy is True, generating keys, this could take awhile...")
-                key_proxy_rig(
-                    armature=proxyObj.name,
-                    motion=motion,
-                    lerp_data=lerp_data,
-                    flatten=False,
-                )
-                print("finished!")
-            return True
+        if test_proxy:
+            print("[Onigiri] test_proxy ist aktiv, generiere Keys...")
+            key_proxy_rig(
+                armature=proxyObj.name,
+                motion=motion,
+                lerp_data=lerp_data,
+                flatten=False,
+            )
+            print("[Onigiri] Proxy-Key-Generierung abgeschlossen.")
+
+        utils.popup("Mapped Animation erfolgreich exportiert.", "Export", "INFO")
+        print("[Onigiri] Export mapped animation erfolgreich abgeschlossen.")
+        return True
 
     if len(bone_list) == 0:
         print(
